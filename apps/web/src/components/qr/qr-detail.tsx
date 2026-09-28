@@ -18,7 +18,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { getQRCodeAnalytics } from "@/lib/api/analytics";
 import { deleteQRCode, getQRCode, updateQRCode } from "@/lib/api/qr";
-import { shortUrlFor } from "@/lib/config";
 import { useResource } from "@/lib/hooks/use-resource";
 import { downloadQRCode } from "@/lib/qr/export";
 import { formatNumber } from "@/lib/utils/format";
@@ -41,7 +40,7 @@ export function QRDetail({ id }: { id: string }) {
   const qr = qrRes.data;
   if (!qr) return <DetailSkeleton />;
 
-  const shortUrl = shortUrlFor(qr.slug);
+  const shortUrl = qr.shortUrl;
   const paused = qr.status !== "active";
 
   const toggleStatus = async () => {
@@ -133,17 +132,25 @@ export function QRDetail({ id }: { id: string }) {
               <StatCard
                 label="Total scans"
                 value={formatNumber(stats.data.totalScans)}
-                delta={stats.data.totalScansDelta.value}
+                delta={stats.data.totalScansDelta?.value}
                 sparkline={stats.data.sparklines.total}
               />
               <StatCard
                 label="Unique visitors"
                 value={formatNumber(stats.data.uniqueVisitors)}
-                delta={stats.data.uniqueVisitorsDelta.value}
+                delta={stats.data.uniqueVisitorsDelta?.value}
                 sparkline={stats.data.sparklines.unique}
               />
-              <StatCard label="Avg. scan time" value={`${stats.data.avgScanTimeSeconds}s`} footnote="From lens capture to direct load" />
-              <StatCard label="Mobile scans" value={`${stats.data.mobileShare}%`} footnote={`${stats.data.dominantPlatform} dominant platform`} />
+              <StatCard
+                label="Countries"
+                value={stats.data.countryCount}
+                footnote={stats.data.countries[0] && stats.data.countries[0].countryCode !== "XX" ? `Mostly ${stats.data.countries[0].label}` : "Where scans come from"}
+              />
+              <StatCard
+                label="Mobile scans"
+                value={`${stats.data.mobileShare}%`}
+                footnote={stats.data.dominantPlatform ? `${stats.data.dominantPlatform} dominant platform` : "Share of scans from phones"}
+              />
             </>
           ) : (
             Array.from({ length: 4 }, (_, i) => <StatCardSkeleton key={i} />)
@@ -161,25 +168,27 @@ export function QRDetail({ id }: { id: string }) {
         </div>
         {stats.loading ? (
           <Skeleton className="h-[240px] w-full" />
-        ) : stats.data && stats.data.timeseries.length ? (
+        ) : stats.data && stats.data.totalScans > 0 ? (
           <>
             <ScansLineChart data={stats.data.timeseries} label={`Scans for ${qr.name} over the selected period`} />
-            <p className="flex w-fit items-center gap-2 rounded-lg border border-line bg-bg p-3 text-[13px] text-muted-2">
-              <span className="size-2 rounded-full bg-fg-strong" aria-hidden />
-              <span>
-                Peak Activity: <b className="font-bold text-fg-strong">{stats.data.peak.label}</b> · {formatNumber(stats.data.peak.scans)} scans
-              </span>
-            </p>
+            {stats.data.peak && (
+              <p className="flex w-fit items-center gap-2 rounded-lg border border-line bg-bg p-3 text-[13px] text-muted-2">
+                <span className="size-2 rounded-full bg-fg-strong" aria-hidden />
+                <span>
+                  Peak Activity: <b className="font-bold text-fg-strong">{stats.data.peak.label}</b> · {formatNumber(stats.data.peak.scans)} scans
+                </span>
+              </p>
+            )}
           </>
         ) : (
           <p className="py-16 text-center text-sm text-muted">No scans yet — share your code to start collecting data.</p>
         )}
       </Card>
 
-      {stats.data && stats.data.topLocations.length > 0 && (
+      {stats.data && stats.data.countries.length > 0 && (
         <section className="flex flex-col gap-4 md:hidden">
           <h2 className="font-display text-lg font-extrabold text-fg">Top Locations</h2>
-          <ShareBars items={stats.data.topLocations} />
+          <ShareBars items={stats.data.countries} />
         </section>
       )}
 

@@ -17,6 +17,8 @@ const STATUS: Record<Scannability, { label: string; dot: string }> = {
 
 interface QRPreviewCardProps {
   payload: string;
+  /** False for new codes: the API assigns the short link on save. */
+  payloadIsFinal: boolean;
   style: QRStyle;
   scannability: Scannability;
   destination: string | null;
@@ -25,7 +27,7 @@ interface QRPreviewCardProps {
   compact?: boolean;
 }
 
-export function QRPreviewCard({ payload, style, scannability, destination, phoneMockup, onPhoneMockupChange, compact }: QRPreviewCardProps) {
+export function QRPreviewCard({ payload, payloadIsFinal, style, scannability, destination, phoneMockup, onPhoneMockupChange, compact }: QRPreviewCardProps) {
   const status = STATUS[scannability];
 
   const card = (
@@ -62,7 +64,13 @@ export function QRPreviewCard({ payload, style, scannability, destination, phone
       )}
 
       <p className="max-w-[384px] text-center text-xs text-subtle">
-        Encodes <span className="font-mono text-muted-2">{stripProtocol(payload)}</span>
+        {payloadIsFinal ? (
+          <>
+            Encodes <span className="font-mono text-muted-2">{stripProtocol(payload)}</span>
+          </>
+        ) : (
+          "Your Qdot short link is assigned when you save"
+        )}
         {destination && (
           <>
             {" "}

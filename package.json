@@ -2,8 +2,16 @@
   "name": "qdot",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter web dev",
-    "build": "pnpm --filter web build",
+    "dev": "pnpm --parallel --filter web --filter @qdot/api dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter @qdot/api dev",
+    "db:migrate": "pnpm --filter @qdot/api migrate",
+    "db:generate": "pnpm --filter @qdot/database generate",
+    "db:embedded": "pnpm --filter @qdot/api db:embedded",
+    "geoip:download": "pnpm --filter @qdot/api geoip:download",
+    "build": "pnpm --filter @qdot/api build && pnpm --filter web build",
+    "test": "pnpm --filter @qdot/api test",
+    "typecheck": "pnpm -r typecheck",
     "lint": "pnpm --filter web lint"
   },
   "packageManager": "pnpm@11.6.0"

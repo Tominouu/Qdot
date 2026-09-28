@@ -1,0 +1,26 @@
+{
+  "name": "@qdot/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "studio": "drizzle-kit studio",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.3",
+    "postgres": "3.4.9",
+    "@qdot/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "dotenv": "18.0.4",
+    "drizzle-kit": "0.31.11",
+    "tsx": "4.23.15",
+    "typescript": "^5.9.3"
+  }
+}

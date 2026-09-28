@@ -3,8 +3,15 @@ import type { ScanEvent } from "@/types";
 
 const COLUMNS = ["Time", "Location", "Device", "Browser", "OS"] as const;
 
+const DEVICE_LABEL: Record<ScanEvent["device"], string> = { mobile: "Mobile", tablet: "Tablet", desktop: "Desktop" };
+
+/** "Paris, France" / "France" / "Unknown location" (private networks have no geography). */
+export function scanLocation(s: ScanEvent): string {
+  return [s.city, s.country].filter(Boolean).join(", ") || "Unknown location";
+}
+
 function cells(s: ScanEvent) {
-  return [formatRelativeTime(s.scannedAt), `${s.city}, ${s.country}`, s.deviceModel, s.browser, s.os];
+  return [formatRelativeTime(s.scannedAt), scanLocation(s), DEVICE_LABEL[s.device], s.browser ?? "Unknown", s.os ?? "Unknown"];
 }
 
 /** "Recent scan history": a table on ≥ md, stacked cards on mobile. */
@@ -42,13 +49,11 @@ export function ScansTable({ scans }: { scans: ScanEvent[] }) {
         {scans.map((s) => (
           <li key={s.id} className="rounded-2xl border border-line bg-surface p-4">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-fg">
-                {s.city}, {s.country}
-              </p>
+              <p className="text-sm font-semibold text-fg">{scanLocation(s)}</p>
               <p className="text-xs text-subtle">{formatRelativeTime(s.scannedAt)}</p>
             </div>
             <p className="mt-1 text-xs text-muted-2">
-              {s.deviceModel} · {s.browser} · {s.os}
+              {cells(s).slice(2).join(" · ")}
             </p>
           </li>
         ))}

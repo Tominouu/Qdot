@@ -7,7 +7,10 @@ import { useRef, useState } from "react";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { ApiError, isUnauthenticated } from "@/lib/api/client";
 import { createQRCode, updateQRCode } from "@/lib/api/qr";
+import { clearSession, getSession } from "@/lib/auth/session";
+import { savePendingQR } from "@/lib/onboarding/pending-qr";
 import { DestinationPanel, StylePanels, TypePanel } from "./editor-panels";
 import { QRPreviewCard } from "./qr-preview-card";
 import { useQRDraft, type QRDraft } from "./use-qr-draft";
@@ -22,7 +25,7 @@ export function QREditor({ initial, existingId }: QREditorProps) {
   const router = useRouter();
   const { toast } = useToast();
   const ctrl = useQRDraft(initial);
-  const { draft, destination, inputError, payload, scannability } = ctrl;
+  const { draft, destination, inputError, payload, payloadIsFinal, scannability } = ctrl;
   const [phoneMockup, setPhoneMockup] = useState(false);
   const [pending, setPending] = useState<"create" | "draft" | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -30,11 +33,32 @@ export function QREditor({ initial, existingId }: QREditorProps) {
 
   const baseInput = () => ({
     name: draft.name,
-    type: draft.type,
     category: draft.category,
     campaignId: draft.campaignId,
     style: draft.style,
   });
+
+  /** No account yet (onboarding) or session expired: keep everything and go to the Account step. */
+  const continueToAccount = (destinationUrl: string, status: "active" | "draft") => {
+    savePendingQR({
+      draft: {
+        previewCode: draft.previewCode,
+        name: draft.name,
+        type: draft.type,
+        category: draft.category,
+        campaignId: draft.campaignId,
+        input: draft.input,
+        style: draft.style,
+      },
+      create: { ...baseInput(), type: "url", destinationUrl, status },
+    });
+    router.push("/onboarding/account");
+  };
+
+  const fail = (err: unknown, fallback: string) => {
+    toast(err instanceof ApiError && err.status !== 500 ? err.message : fallback, "warning");
+    setPending(null);
+  };
 
   const submit = async () => {
     ctrl.touch();
@@ -43,6 +67,7 @@ export function QREditor({ initial, existingId }: QREditorProps) {
       inputRef.current?.focus();
       return;
     }
+    if (!editing && !getSession()) return continueToAccount(destination, "active");
     setPending("create");
     try {
       if (existingId) {
@@ -50,24 +75,39 @@ export function QREditor({ initial, existingId }: QREditorProps) {
         toast("Changes saved — printed codes now resolve to the new destination", "info");
         router.push(`/qr-codes/${existingId}`);
       } else {
-        const qr = await createQRCode({ ...baseInput(), slug: draft.slug, destinationUrl: destination, status: "active" });
+        const qr = await createQRCode({ ...baseInput(), type: "url", destinationUrl: destination, status: "active" });
         router.push(`/qr-codes/${qr.id}/success`);
       }
-    } catch {
-      toast("Something went wrong. Please try again.", "warning");
-      setPending(null);
+    } catch (err) {
+      if (isUnauthenticated(err)) {
+        clearSession();
+        if (!editing) return continueToAccount(destination, "active");
+        router.push(`/sign-in?next=${encodeURIComponent(`/qr-codes/${existingId}/edit`)}`);
+        return;
+      }
+      fail(err, "Something went wrong. Please try again.");
     }
   };
 
   const saveDraft = async () => {
+    if (!destination) {
+      ctrl.touch();
+      toast("Add a valid destination to save a draft", "warning");
+      inputRef.current?.focus();
+      return;
+    }
+    if (!getSession()) return continueToAccount(destination, "draft");
     setPending("draft");
     try {
-      await createQRCode({ ...baseInput(), slug: draft.slug, destinationUrl: destination ?? draft.input, status: "draft" });
+      await createQRCode({ ...baseInput(), type: "url", destinationUrl: destination, status: "draft" });
       toast("Draft saved", "info");
       router.push("/qr-codes");
-    } catch {
-      toast("Could not save draft", "warning");
-      setPending(null);
+    } catch (err) {
+      if (isUnauthenticated(err)) {
+        clearSession();
+        return continueToAccount(destination, "draft");
+      }
+      fail(err, "Could not save draft");
     }
   };
 
@@ -129,6 +169,7 @@ export function QREditor({ initial, existingId }: QREditorProps) {
             <QRPreviewCard
               compact
               payload={payload}
+              payloadIsFinal={payloadIsFinal}
               style={draft.style}
               scannability={scannability}
               destination={destination}
@@ -139,6 +180,7 @@ export function QREditor({ initial, existingId }: QREditorProps) {
           <div className="hidden w-full justify-center md:flex lg:sticky lg:top-24">
             <QRPreviewCard
               payload={payload}
+              payloadIsFinal={payloadIsFinal}
               style={draft.style}
               scannability={scannability}
               destination={destination}

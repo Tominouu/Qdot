@@ -1,12 +1,15 @@
 "use client";
 
+import { LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSignOut } from "@/lib/auth/use-sign-out";
 import { cn } from "@/lib/utils/cn";
 import { SETTINGS_SECTIONS } from "./sections";
 
 export function SettingsNav() {
   const pathname = usePathname();
+  const signOut = useSignOut();
   return (
     <nav aria-label="Settings" className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] lg:mx-0 lg:w-[220px] lg:shrink-0 lg:overflow-visible lg:px-0">
       <ul className="flex gap-1.5 lg:flex-col">
@@ -27,6 +30,16 @@ export function SettingsNav() {
             </li>
           );
         })}
+        <li className="lg:mt-4 lg:border-t lg:border-line lg:pt-4">
+          <button
+            type="button"
+            onClick={signOut}
+            className="flex items-center gap-2 rounded-lg border border-transparent px-4 py-2.5 text-sm font-medium whitespace-nowrap text-muted transition-colors hover:bg-surface/60 hover:text-fg"
+          >
+            <LogOut className="size-4" aria-hidden />
+            Sign out
+          </button>
+        </li>
       </ul>
     </nav>
   );

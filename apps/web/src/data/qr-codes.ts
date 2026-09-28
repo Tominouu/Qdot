@@ -1,12 +1,18 @@
 import { DEFAULT_QR_STYLE } from "@/lib/qr/presets";
 import type { QRCode } from "@/types";
 
+/** Short URL for mock codes (the real API builds it from QR_REDIRECT_BASE_URL). */
+export function mockShortUrl(code: string): string {
+  return `https://qr.qdot.com/r/${code}`;
+}
+
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
 
 export const QR_CODES: QRCode[] = [
   {
     id: "qr_summer_menu",
-    slug: "sm26x9",
+    code: "sm26x9",
+    shortUrl: mockShortUrl("sm26x9"),
     name: "Summer Menu",
     type: "url",
     category: "menu",
@@ -22,7 +28,8 @@ export const QR_CODES: QRCode[] = [
   },
   {
     id: "qr_product_launch",
-    slug: "pl8k2m",
+    code: "pl8k2m",
+    shortUrl: mockShortUrl("pl8k2m"),
     name: "Product Launch",
     type: "url",
     category: "website",
@@ -38,7 +45,8 @@ export const QR_CODES: QRCode[] = [
   },
   {
     id: "qr_instagram",
-    slug: "ig4v7p",
+    code: "ig4v7p",
+    shortUrl: mockShortUrl("ig4v7p"),
     name: "Instagram Page",
     type: "url",
     category: "social",
@@ -54,7 +62,8 @@ export const QR_CODES: QRCode[] = [
   },
   {
     id: "qr_restaurant_wifi",
-    slug: "wf3n1q",
+    code: "wf3n1q",
+    shortUrl: mockShortUrl("wf3n1q"),
     name: "Restaurant WiFi",
     type: "url",
     category: "menu",
@@ -70,7 +79,8 @@ export const QR_CODES: QRCode[] = [
   },
   {
     id: "qr_feedback",
-    slug: "fb7r2d",
+    code: "fb7r2d",
+    shortUrl: mockShortUrl("fb7r2d"),
     name: "Feedback Form",
     type: "url",
     category: "custom",
@@ -86,7 +96,8 @@ export const QR_CODES: QRCode[] = [
   },
   {
     id: "qr_social_links",
-    slug: "sl2c8w",
+    code: "sl2c8w",
+    shortUrl: mockShortUrl("sl2c8w"),
     name: "Social Links",
     type: "url",
     category: "social",
@@ -102,7 +113,8 @@ export const QR_CODES: QRCode[] = [
   },
   {
     id: "qr_promo_brochure",
-    slug: "pb5h6t",
+    code: "pb5h6t",
+    shortUrl: mockShortUrl("pb5h6t"),
     name: "Promo Brochure",
     type: "url",
     category: "event",
@@ -118,7 +130,8 @@ export const QR_CODES: QRCode[] = [
   },
   {
     id: "qr_newsletter",
-    slug: "nl9j4e",
+    code: "nl9j4e",
+    shortUrl: mockShortUrl("nl9j4e"),
     name: "Newsletter",
     type: "url",
     category: "website",

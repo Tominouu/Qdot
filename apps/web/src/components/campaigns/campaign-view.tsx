@@ -2,6 +2,7 @@
 
 import { Plus } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ChannelsLineChart } from "@/components/analytics/channels-line-chart";
 import { StatCard, StatCardSkeleton } from "@/components/analytics/stat-card";
@@ -11,14 +12,14 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card, CardTitle, SectionHeading } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getCampaign } from "@/lib/api/campaigns";
-import { shortUrlFor } from "@/lib/config";
+import { getCampaign, getCampaignAnalytics } from "@/lib/api/campaigns";
 import { useResource } from "@/lib/hooks/use-resource";
 import { formatDate, formatNumber } from "@/lib/utils/format";
 import type { QRCode } from "@/types";
 import { EditCampaignModal } from "./edit-campaign-modal";
 
-const FLAGS: Record<string, string> = { FR: "🇫🇷", BE: "🇧🇪", CH: "🇨🇭", DE: "🇩🇪", US: "🇺🇸", GB: "🇬🇧" };
+/** Emoji flag from an ISO 3166-1 alpha-2 code (regional indicator symbols). */
+const flag = (code: string) => (/^[A-Z]{2}$/.test(code) ? String.fromCodePoint(...[...code].map((c) => 0x1f1a5 + c.charCodeAt(0))) : "");
 
 function CampaignQRCard({ qr }: { qr: QRCode }) {
   return (
@@ -28,7 +29,7 @@ function CampaignQRCard({ qr }: { qr: QRCode }) {
     >
       <Card className="flex h-full flex-col gap-7 p-6 transition-colors group-hover:border-line-strong">
         <div className="flex items-center justify-between">
-          <StyledQR value={shortUrlFor(qr.slug)} style={qr.style} size={48} title={`${qr.name} QR code`} />
+          <StyledQR value={qr.shortUrl} style={qr.style} size={48} title={`${qr.name} QR code`} />
           <Pill className="text-[13px]">{qr.status === "active" ? "Active" : qr.status[0].toUpperCase() + qr.status.slice(1)}</Pill>
         </div>
         <div className="flex flex-col gap-1">
@@ -42,7 +43,9 @@ function CampaignQRCard({ qr }: { qr: QRCode }) {
 
 export function CampaignView({ id }: { id: string }) {
   const res = useResource(() => getCampaign(id), [id]);
+  const analytics = useResource(() => getCampaignAnalytics(id), [id]);
   const [editing, setEditing] = useState(false);
+  const router = useRouter();
 
   if (res.error)
     return (
@@ -55,7 +58,7 @@ export function CampaignView({ id }: { id: string }) {
     );
 
   const detail = res.data;
-  const a = detail?.analytics;
+  const a = analytics.data;
 
   return (
     <div className="flex flex-col gap-10">
@@ -66,7 +69,7 @@ export function CampaignView({ id }: { id: string }) {
             <div className="flex min-w-0 flex-col gap-2">
               <div className="flex items-center gap-3">
                 <h1 className="font-display text-[28px] leading-tight font-black text-fg md:text-[32px]">{detail.campaign.name}</h1>
-                <Pill className="text-[13px] capitalize">{detail.campaign.status}</Pill>
+                <Pill className="text-[13px]">{detail.qrCodes.some((q) => q.status === "active") ? "Active" : "Inactive"}</Pill>
               </div>
               <p className="text-[15px] text-muted">{detail.campaign.description}</p>
             </div>
@@ -82,19 +85,23 @@ export function CampaignView({ id }: { id: string }) {
       <section aria-label="Campaign metrics" className="grid grid-cols-2 gap-3 md:gap-6 xl:grid-cols-4">
         {a ? (
           <>
-            <StatCard label="Total scans" value={formatNumber(a.totalScans)} delta={a.totalScansDelta.value} deltaTone="neutral" />
-            <StatCard label="Unique visitors" value={formatNumber(a.uniqueVisitors)} delta={a.uniqueVisitorsDelta.value} deltaTone="neutral" />
+            <StatCard label="Total scans" value={formatNumber(a.totalScans)} delta={a.totalScansDelta?.value} deltaTone="neutral" />
+            <StatCard label="Unique visitors" value={formatNumber(a.uniqueVisitors)} delta={a.uniqueVisitorsDelta?.value} deltaTone="neutral" />
             <StatCard
               label="Top country"
               value={
-                <>
-                  {a.topCountry.name} <span aria-hidden>{FLAGS[a.topCountry.countryCode] ?? ""}</span>
-                </>
+                a.topCountry ? (
+                  <>
+                    {a.topCountry.name} <span aria-hidden>{flag(a.topCountry.countryCode)}</span>
+                  </>
+                ) : (
+                  "—"
+                )
               }
-              deltaLabel={`${a.topCountry.share}% Share`}
+              deltaLabel={a.topCountry ? `${a.topCountry.share}% Share` : undefined}
               deltaTone="neutral"
             />
-            <StatCard label="Conversion rate" value={`${a.conversionRate}%`} delta={a.conversionRateDelta.value} deltaTone="neutral" />
+            <StatCard label="Active codes" value={a.activeCodes} footnote={`of ${detail?.qrCodes.length ?? 0} in this campaign`} />
           </>
         ) : (
           Array.from({ length: 4 }, (_, i) => <StatCardSkeleton key={i} />)
@@ -116,15 +123,27 @@ export function CampaignView({ id }: { id: string }) {
           }
         />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 xl:grid-cols-4">
-          {detail
-            ? detail.qrCodes.map((qr) => <CampaignQRCard key={qr.id} qr={qr} />)
-            : Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-[154px] rounded-2xl" />)}
+          {!detail ? (
+            Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-[154px] rounded-2xl" />)
+          ) : detail.qrCodes.length ? (
+            detail.qrCodes.map((qr) => <CampaignQRCard key={qr.id} qr={qr} />)
+          ) : (
+            <p className="col-span-full rounded-2xl border border-dashed border-line p-8 text-center text-sm text-muted">
+              No QR codes in this campaign yet. Add one to start tracking it here.
+            </p>
+          )}
         </div>
       </section>
 
       <Card className="flex flex-col gap-6 p-5 md:p-6">
         <CardTitle>Scans over time · By Channel</CardTitle>
-        {a ? <ChannelsLineChart labels={a.labels} channels={a.channels} /> : <Skeleton className="h-[280px] w-full" />}
+        {!a ? (
+          <Skeleton className="h-[280px] w-full" />
+        ) : a.totalScans > 0 ? (
+          <ChannelsLineChart labels={a.labels} channels={a.channels} />
+        ) : (
+          <p className="py-16 text-center text-sm text-muted">No scans in the last 7 days.</p>
+        )}
       </Card>
 
       {detail && a && (
@@ -148,6 +167,7 @@ export function CampaignView({ id }: { id: string }) {
           open={editing}
           onClose={() => setEditing(false)}
           onSaved={(campaign) => res.setData({ ...detail, campaign })}
+          onDeleted={() => router.push("/campaigns")}
         />
       )}
     </div>

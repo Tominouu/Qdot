@@ -83,17 +83,17 @@ export function AnalyticsOverview() {
                 className="w-[180px] sm:w-auto"
                 label="Total scans"
                 value={formatNumber(data.totalScans)}
-                delta={data.totalScansDelta.value}
+                delta={data.totalScansDelta?.value}
                 sparkline={data.sparklines.total}
               />
               <StatCard
                 className="w-[180px] sm:w-auto"
                 label="Unique scans"
                 value={formatNumber(data.uniqueScans)}
-                delta={data.uniqueScansDelta.value}
+                delta={data.uniqueScansDelta?.value}
                 sparkline={data.sparklines.unique}
               />
-              <StatCard className="w-[180px] sm:w-auto" label="Countries" value={data.countries} icon={<Globe />} footnote="Global scanning distribution" />
+              <StatCard className="w-[180px] sm:w-auto" label="Countries" value={data.countryCount} icon={<Globe />} footnote="Global scanning distribution" />
               <StatCard className="w-[180px] sm:w-auto" label="Active codes" value={data.activeCodes} icon={<QrCode />} footnote="Tracking in real-time" />
             </>
           ) : (
@@ -142,8 +142,8 @@ export function AnalyticsOverview() {
           </CardTitle>
           {data ? (
             <>
-              <GeoMap points={data.geography} className="hidden md:block" />
-              <ShareBars items={data.geography} />
+              <GeoMap points={data.countries} className="hidden md:block" />
+              <ShareBars items={data.countries} />
             </>
           ) : (
             <Skeleton className="h-[360px] w-full" />
@@ -156,6 +156,8 @@ export function AnalyticsOverview() {
               <DeviceBar items={data.devices} />
               <hr className="border-line" />
               <BrowserList items={data.browsers} />
+              {data.operatingSystems.length > 0 && <BrowserList title="Operating systems" items={data.operatingSystems} />}
+              {data.referrers.length > 0 && <BrowserList title="Referrers" items={data.referrers} />}
             </>
           ) : (
             <Skeleton className="h-[240px] w-full" />

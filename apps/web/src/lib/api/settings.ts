@@ -1,22 +1,16 @@
-import { CURRENT_USER } from "@/data/user";
-import { USE_MOCK_API } from "@/lib/config";
-import type { PrivacySettings, User } from "@/types";
-import { apiRequest } from "./client";
+import type { PrivacySettings } from "@/types";
 import { delay, readStore, writeStore } from "./mock-store";
 
-export async function getCurrentUser(): Promise<User> {
-  if (!USE_MOCK_API) return apiRequest<User>("/me");
-  return CURRENT_USER;
-}
-
+/**
+ * Privacy preferences. The backend has no settings endpoint yet, so these are
+ * stored in the browser in every mode. The API already applies the privacy-first
+ * defaults (no raw IPs, no cookies for scanners).
+ */
 export async function getPrivacySettings(): Promise<PrivacySettings> {
-  if (!USE_MOCK_API) return apiRequest<PrivacySettings>("/settings/privacy");
   return delay(readStore().privacy);
 }
 
 export async function updatePrivacySettings(patch: Partial<PrivacySettings>): Promise<PrivacySettings> {
-  if (!USE_MOCK_API)
-    return apiRequest<PrivacySettings>("/settings/privacy", { method: "PATCH", body: JSON.stringify(patch) });
   writeStore((s) => {
     s.privacy = { ...s.privacy, ...patch };
   });

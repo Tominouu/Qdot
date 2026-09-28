@@ -72,16 +72,20 @@ export function TypePanel({ ctrl }: { ctrl: QRDraftController }) {
       <div role="radiogroup" aria-label="Content type" className="flex flex-wrap gap-2">
         {CONTENT_TYPES.map((t) => {
           const active = draft.type === t.value;
+          // Only dynamic URL codes are supported by the API for now.
+          const available = t.value === "url";
           return (
             <button
               key={t.value}
               type="button"
               role="radio"
               aria-checked={active}
+              disabled={!available}
+              title={available ? undefined : "Coming soon"}
               onClick={() => active || set({ type: t.value, input: "", touched: false })}
               className={cn(
-                "rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors",
-                active ? "border-line-strong bg-surface-raised text-fg-strong" : "border-line bg-surface text-subtle hover:text-fg",
+                "rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                active ? "border-line-strong bg-surface-raised text-fg-strong" : "border-line bg-surface text-subtle enabled:hover:text-fg",
               )}
             >
               {t.label}

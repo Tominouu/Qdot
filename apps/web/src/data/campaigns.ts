@@ -1,11 +1,20 @@
-import type { Campaign, CampaignAnalytics } from "@/types";
+import type { CampaignAnalytics } from "@/types";
 
-export const CAMPAIGNS: Campaign[] = [
+/** Mock-only campaign record (the API derives membership from qr_codes.campaign_id). */
+export interface MockCampaign {
+  id: string;
+  name: string;
+  description: string;
+  qrCodeIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const CAMPAIGNS: MockCampaign[] = [
   {
     id: "summer-2026",
     name: "Summer 2026",
     description: "Summer marketing campaign across all restaurant locations",
-    status: "active",
     qrCodeIds: ["qr_summer_menu", "qr_restaurant_wifi", "qr_instagram", "qr_feedback"],
     createdAt: "2026-05-01T09:00:00.000Z",
     updatedAt: "2026-09-25T16:40:00.000Z",
@@ -17,11 +26,10 @@ export const CAMPAIGN_ANALYTICS: Record<string, CampaignAnalytics> = {
     campaignId: "summer-2026",
     totalScans: 28745,
     uniqueVisitors: 19281,
+    activeCodes: 4,
     topCountry: { name: "France", countryCode: "FR", share: 42 },
-    conversionRate: 4.8,
     totalScansDelta: { value: 22.3 },
     uniqueVisitorsDelta: { value: 15.8 },
-    conversionRateDelta: { value: 0.4 },
     labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
     channels: [
       { qrCodeId: "qr_summer_menu", name: "Summer Menu", points: [1420, 1610, 1540, 1880, 2050, 2310, 2140] },

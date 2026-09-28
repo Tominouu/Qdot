@@ -1,0 +1,41 @@
+{
+  "name": "@qdot/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsup",
+    "start": "node dist/server.js",
+    "migrate": "tsx src/migrate.ts",
+    "migrate:prod": "node dist/migrate.js",
+    "geoip:download": "tsx scripts/download-geoip.ts",
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "db:embedded": "tsx scripts/embedded-db.ts"
+  },
+  "dependencies": {
+    "@fastify/cookie": "11.1.2",
+    "@fastify/cors": "11.3.0",
+    "@fastify/rate-limit": "11.2.0",
+    "@qdot/database": "workspace:*",
+    "@qdot/types": "workspace:*",
+    "argon2": "0.45.1",
+    "dotenv": "18.0.4",
+    "drizzle-orm": "0.45.3",
+    "fastify": "5.12.5",
+    "maxmind": "5.0.7",
+    "postgres": "3.4.9",
+    "ua-parser-js": "1.0.41",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@electric-sql/pglite-socket": "0.2.11",
+    "@types/node": "^20",
+    "@types/ua-parser-js": "^0.7.39",
+    "tsup": "8.5.1",
+    "tsx": "4.23.15",
+    "typescript": "^5.9.3"
+  }
+}

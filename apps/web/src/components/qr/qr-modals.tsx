@@ -6,7 +6,6 @@ import { CopyButton } from "@/components/ui/copy-button";
 import { Field, Select } from "@/components/ui/field";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
-import { shortUrlFor } from "@/lib/config";
 import { downloadQRCode, type ExportFormat } from "@/lib/qr/export";
 import type { QRCode } from "@/types";
 import { StyledQR } from "./styled-qr";
@@ -18,7 +17,7 @@ interface QRModalProps {
 }
 
 export function ShareQRModal({ qr, open, onClose }: QRModalProps) {
-  const link = shortUrlFor(qr.slug);
+  const link = qr.shortUrl;
   const canNativeShare = typeof navigator !== "undefined" && "share" in navigator;
   return (
     <Modal open={open} onClose={onClose} title="Share QR Code">
@@ -85,7 +84,7 @@ export function ExportQRModal({ qr, open, onClose }: QRModalProps) {
         onClick={async () => {
           setBusy(true);
           try {
-            await downloadQRCode({ payload: shortUrlFor(qr.slug), style: qr.style, name: qr.name, format, pixelSize: Number(resolution) });
+            await downloadQRCode({ payload: qr.shortUrl, style: qr.style, name: qr.name, format, pixelSize: Number(resolution) });
             toast(`${format.toUpperCase()} exported`);
             onClose();
           } catch {

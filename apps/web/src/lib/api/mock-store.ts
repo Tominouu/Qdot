@@ -1,7 +1,7 @@
-import { CAMPAIGNS } from "@/data/campaigns";
+import { CAMPAIGNS, type MockCampaign } from "@/data/campaigns";
 import { QR_CODES } from "@/data/qr-codes";
 import { PRIVACY_SETTINGS } from "@/data/user";
-import type { Campaign, PrivacySettings, QRCode } from "@/types";
+import type { PrivacySettings, QRCode } from "@/types";
 
 /**
  * In-memory stand-in for the backend while NEXT_PUBLIC_API_URL is unset.
@@ -11,11 +11,11 @@ import type { Campaign, PrivacySettings, QRCode } from "@/types";
 
 interface MockState {
   qrCodes: QRCode[];
-  campaigns: Campaign[];
+  campaigns: MockCampaign[];
   privacy: PrivacySettings;
 }
 
-const STORAGE_KEY = "qdot.mock.v1";
+const STORAGE_KEY = "qdot.mock.v2";
 const LATENCY_MS = 280;
 
 let state: MockState | null = null;

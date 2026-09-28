@@ -5,3 +5,5 @@ packages:
 allowBuilds:
   sharp: true
   unrs-resolver: true
+  esbuild: true
+  argon2: true

@@ -1,74 +1,62 @@
-import {
-  BROWSERS,
-  DEVICES,
-  GEOGRAPHY,
-  OPERATING_SYSTEMS,
-  RANGE_MULTIPLIER,
-  REFERRERS,
-  buildRecentScans,
-  buildSparkline,
-  buildTimeseries,
-} from "@/data/analytics";
+import { buildRecentScans, buildTimeseries, mockBreakdown, RANGE_MULTIPLIER } from "@/data/analytics";
 import { USE_MOCK_API } from "@/lib/config";
-import { hashString } from "@/lib/utils/seeded-random";
+import { hashString, seededRandom } from "@/lib/utils/seeded-random";
 import type { AnalyticsSummary, QRCodeAnalytics, TimeRange } from "@/types";
-import { ApiError, apiRequest, toQuery } from "./client";
+import { ApiError, apiRequest, browserTimeZone, toQuery } from "./client";
 import { delay, readStore } from "./mock-store";
 
-/** Workspace-wide analytics (Analytics Overview screen). */
+const sparkline = (seed: number) => {
+  const rand = seededRandom(seed);
+  return Array.from({ length: 8 }, (_, i) => 0.4 + i * 0.05 + rand() * 0.2);
+};
+
+/** Workspace-wide analytics (Analytics Overview screen). Aggregated by the API. */
 export async function getAnalyticsSummary(range: TimeRange = "30d"): Promise<AnalyticsSummary> {
-  if (!USE_MOCK_API) return apiRequest<AnalyticsSummary>(`/analytics/summary${toQuery({ range })}`);
+  if (!USE_MOCK_API) return apiRequest<AnalyticsSummary>(`/analytics${toQuery({ range, tz: browserTimeZone() })}`);
 
   const codes = readStore().qrCodes;
   const m = codes.some((c) => c.totalScans > 0) ? RANGE_MULTIPLIER[range] : 0;
   const totalScans = Math.round(48293 * m);
-  const uniqueScans = Math.round(31847 * m);
+  const breakdown = mockBreakdown(totalScans);
   return delay({
     range,
     totalScans,
-    uniqueScans,
-    countries: range === "24h" ? 9 : 24,
+    uniqueScans: Math.round(31847 * m),
     activeCodes: codes.filter((c) => c.status === "active").length,
-    totalScansDelta: { value: 24.1 },
-    uniqueScansDelta: { value: 18.7 },
-    sparklines: { total: buildSparkline(11), unique: buildSparkline(23) },
-    timeseries: buildTimeseries(range, 2000, 7),
-    geography: GEOGRAPHY,
-    devices: DEVICES,
-    browsers: BROWSERS,
-    operatingSystems: OPERATING_SYSTEMS,
-    referrers: REFERRERS,
+    totalScansDelta: m ? { value: 24.1 } : null,
+    uniqueScansDelta: m ? { value: 18.7 } : null,
+    sparklines: { total: sparkline(11), unique: sparkline(23) },
+    timeseries: m ? buildTimeseries(range, 2000, 7) : [],
+    ...(m ? breakdown : { ...breakdown, countryCount: 0, countries: [], cities: [], devices: [], browsers: [], operatingSystems: [], referrers: [] }),
   });
 }
 
-/** Analytics for a single QR code (detail screen). */
+/** Analytics for a single QR code (detail screen). Aggregated by the API. */
 export async function getQRCodeAnalytics(qrCodeId: string, range: TimeRange = "7d"): Promise<QRCodeAnalytics> {
   if (!USE_MOCK_API)
-    return apiRequest<QRCodeAnalytics>(`/qr-codes/${encodeURIComponent(qrCodeId)}/analytics${toQuery({ range })}`);
+    return apiRequest<QRCodeAnalytics>(`/qr/${encodeURIComponent(qrCodeId)}/analytics${toQuery({ range, tz: browserTimeZone() })}`);
 
   const qr = readStore().qrCodes.find((q) => q.id === qrCodeId);
-  if (!qr) throw new ApiError("QR code not found", 404);
-
+  if (!qr) throw new ApiError("QR code not found", 404, "QR_NOT_FOUND");
   const seed = hashString(qr.id);
   const hasScans = qr.totalScans > 0;
   const timeseries = hasScans ? buildTimeseries(range, qr.totalScans / 18, seed) : [];
-  const peakPoint = timeseries.reduce((a, b) => (b.total > a.total ? b : a), timeseries[0] ?? { label: "—", total: 0 });
+  const peak = timeseries.reduce<(typeof timeseries)[number] | null>((a, b) => (!a || b.total > a.total ? b : a), null);
+  const breakdown = mockBreakdown(qr.totalScans);
 
   return delay({
     qrCodeId,
     range,
     totalScans: qr.totalScans,
     uniqueVisitors: qr.uniqueScans,
-    totalScansDelta: { value: hasScans ? 18.2 : 0 },
-    uniqueVisitorsDelta: { value: hasScans ? 12.1 : 0 },
-    avgScanTimeSeconds: hasScans ? 4.2 : 0,
+    totalScansDelta: hasScans ? { value: 18.2 } : null,
+    uniqueVisitorsDelta: hasScans ? { value: 12.1 } : null,
     mobileShare: hasScans ? 91 : 0,
-    dominantPlatform: "iOS",
-    countries: hasScans ? 6 : 0,
-    sparklines: { total: buildSparkline(seed), unique: buildSparkline(seed + 1) },
+    dominantPlatform: hasScans ? "iOS" : null,
+    sparklines: { total: sparkline(seed), unique: sparkline(seed + 1) },
     timeseries,
-    topLocations: hasScans ? GEOGRAPHY.slice(0, 3) : [],
-    peak: { label: range === "24h" ? `Today ${peakPoint.label}` : `${peakPoint.label} 3PM`, scans: Math.round(peakPoint.total * 0.2) },
+    peak: peak ? { label: range === "24h" ? peak.label : `${peak.label} 3PM`, scans: Math.round(peak.total * 0.2) } : null,
     recentScans: hasScans ? buildRecentScans(qr.id) : [],
+    ...(hasScans ? breakdown : { ...breakdown, countryCount: 0, countries: [], cities: [], devices: [], browsers: [], operatingSystems: [], referrers: [] }),
   });
 }

@@ -1,11 +1,15 @@
-import type { GeoShare } from "@/types";
+import { COUNTRY_CENTROIDS } from "@/lib/geo/country-centroids";
+import type { CountryShare } from "@/types";
 
 /**
  * Glowing scan-density dots on a dark canvas (Figma "map-viz"). Points are
  * projected equirectangularly into the bounding box of the known countries.
  */
-export function GeoMap({ points, className }: { points: GeoShare[]; className?: string }) {
-  const located = points.filter((p) => p.countryCode !== "XX");
+export function GeoMap({ points, className }: { points: CountryShare[]; className?: string }) {
+  const located = points.flatMap((p) => {
+    const c = COUNTRY_CENTROIDS[p.countryCode];
+    return c ? [{ ...p, lat: c[0], lng: c[1] }] : [];
+  });
   if (!located.length) return <div className={`h-[180px] rounded-lg bg-inset ${className ?? ""}`} />;
 
   const lngs = located.map((p) => p.lng);

@@ -8,7 +8,6 @@ import { copyText } from "@/components/ui/copy-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { getQRCode } from "@/lib/api/qr";
-import { shortUrlFor } from "@/lib/config";
 import { useResource } from "@/lib/hooks/use-resource";
 import { downloadQRCode, type ExportFormat } from "@/lib/qr/export";
 import { ShareQRModal } from "./qr-modals";
@@ -32,7 +31,7 @@ export function QRSuccess({ id }: { id: string }) {
 
   const download = async (format: ExportFormat) => {
     if (!qr) return;
-    await downloadQRCode({ payload: shortUrlFor(qr.slug), style: qr.style, name: qr.name, format });
+    await downloadQRCode({ payload: qr.shortUrl, style: qr.style, name: qr.name, format });
     toast(`${format.toUpperCase()} downloaded`);
   };
 
@@ -55,7 +54,7 @@ export function QRSuccess({ id }: { id: string }) {
       <div className="flex w-full max-w-[335px] animate-fade-up flex-col items-center gap-6 rounded-3xl border border-line bg-surface p-8 shadow-[0_0_60px_rgba(255,255,255,0.06)] [animation-delay:200ms]">
         {qr ? (
           <div className="w-full max-w-[240px]">
-            <StyledQR value={shortUrlFor(qr.slug)} style={qr.style} title={`${qr.name} QR code, encodes ${shortUrlFor(qr.slug)}`} />
+            <StyledQR value={qr.shortUrl} style={qr.style} title={`${qr.name} QR code, encodes ${qr.shortUrl}`} />
           </div>
         ) : (
           <Skeleton className="size-[240px]" />
@@ -82,7 +81,7 @@ export function QRSuccess({ id }: { id: string }) {
           disabled={!qr}
           onClick={async () => {
             if (!qr) return;
-            await copyText(shortUrlFor(qr.slug));
+            await copyText(qr.shortUrl);
             setCopied(true);
             setTimeout(() => setCopied(false), 1600);
             toast("Link copied to clipboard", "info");

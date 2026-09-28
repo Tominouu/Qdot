@@ -40,7 +40,7 @@ export function MarketingHeader() {
           </ul>
         </nav>
         <div className="hidden items-center gap-4 md:flex">
-          <Link href="/qr-codes" className="text-sm font-medium text-fg transition-colors hover:text-white">
+          <Link href="/sign-in" className="text-sm font-medium text-fg transition-colors hover:text-white">
             Sign in
           </Link>
           <ButtonLink href="/onboarding" className="h-[42px] text-white">
@@ -73,7 +73,7 @@ export function MarketingHeader() {
           ))}
         </ul>
         <div className="mt-4 grid grid-cols-2 gap-3">
-          <ButtonLink href="/qr-codes" variant="neutral">
+          <ButtonLink href="/sign-in" variant="neutral">
             Sign in
           </ButtonLink>
           <ButtonLink href="/onboarding">Get started</ButtonLink>

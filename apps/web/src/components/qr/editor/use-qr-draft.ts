@@ -1,14 +1,17 @@
 "use client";
 
 import { useMemo, useReducer } from "react";
-import { shortUrlFor } from "@/lib/config";
+import { previewShortUrl } from "@/lib/config";
 import { contentTypeConfig } from "@/lib/qr/content-types";
 import { DEFAULT_QR_STYLE } from "@/lib/qr/presets";
 import { checkScannability } from "@/lib/qr/scannability";
-import type { QRCategory, QRCode, QRContentType, QRStyle } from "@/types";
+import type { PendingQRCode, QRCategory, QRCode, QRContentType, QRStyle } from "@/types";
 
 export interface QRDraft {
-  slug: string;
+  /** Placeholder code for new codes; the API assigns the real one on save. */
+  previewCode: string;
+  /** Real redirect URL when editing a saved code (never changes). */
+  shortUrl: string | null;
   name: string;
   type: QRContentType;
   category: QRCategory;
@@ -36,11 +39,20 @@ function reducer(state: QRDraft, action: Action): QRDraft {
   }
 }
 
-export function initialDraft(opts: { slug: string; category?: QRCategory; campaignId?: string; existing?: QRCode }): QRDraft {
+export function initialDraft(opts: {
+  previewCode: string;
+  category?: QRCategory;
+  campaignId?: string;
+  existing?: QRCode;
+  /** Draft saved before the onboarding Account step. */
+  pending?: PendingQRCode["draft"];
+}): QRDraft {
   const { existing } = opts;
+  if (opts.pending) return { ...opts.pending, shortUrl: null, touched: false };
   if (existing) {
     return {
-      slug: existing.slug,
+      previewCode: existing.code,
+      shortUrl: existing.shortUrl,
       name: existing.name,
       type: existing.type,
       category: existing.category,
@@ -51,7 +63,8 @@ export function initialDraft(opts: { slug: string; category?: QRCategory; campai
     };
   }
   return {
-    slug: opts.slug,
+    previewCode: opts.previewCode,
+    shortUrl: null,
     name: "",
     type: "url",
     category: opts.category ?? "website",
@@ -70,12 +83,14 @@ export function useQRDraft(initial: QRDraft) {
   const derived = useMemo(() => {
     const inputError = config.validate(draft.input);
     return {
-      payload: shortUrlFor(draft.slug),
+      payload: draft.shortUrl ?? previewShortUrl(draft.previewCode),
+      /** False until the API has assigned the code (new QR codes). */
+      payloadIsFinal: draft.shortUrl !== null,
       destination: inputError ? null : config.toDestination(draft.input),
       inputError,
       scannability: checkScannability(draft.style),
     };
-  }, [config, draft.input, draft.slug, draft.style]);
+  }, [config, draft.input, draft.previewCode, draft.shortUrl, draft.style]);
 
   return {
     draft,

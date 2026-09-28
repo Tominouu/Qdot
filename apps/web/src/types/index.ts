@@ -1,13 +1,6 @@
-export * from "./qr";
-export * from "./analytics";
-export * from "./campaign";
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl: string;
-}
+// API entities and schemas are shared with the backend (packages/types).
+export * from "@qdot/types";
+export * from "./auth";
 
 export interface PrivacySettings {
   trackScans: boolean;

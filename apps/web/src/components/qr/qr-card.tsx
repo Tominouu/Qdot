@@ -2,7 +2,6 @@ import Link from "next/link";
 import { StatusBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { shortUrlFor } from "@/lib/config";
 import { formatNumber, formatRelativeTime, stripProtocol } from "@/lib/utils/format";
 import type { QRCode } from "@/types";
 import { StyledQR } from "./styled-qr";
@@ -23,7 +22,7 @@ export function QRCard({ qr }: { qr: QRCode }) {
     <Link href={`/qr-codes/${qr.id}`} className={`block rounded-2xl ${cardInteractive}`}>
       <Card className="flex h-full flex-col gap-5 p-6 group-hover:bg-[#2b2b2f]">
         <div className="flex items-start justify-between gap-3">
-          <StyledQR value={shortUrlFor(qr.slug)} style={qr.style} size={110} title={`${qr.name} QR code`} />
+          <StyledQR value={qr.shortUrl} style={qr.style} size={110} title={`${qr.name} QR code`} />
           <StatusBadge status={qr.status} />
         </div>
         <div className="flex min-w-0 flex-col gap-1.5">
@@ -45,7 +44,7 @@ export function QRRow({ qr }: { qr: QRCode }) {
     <Link href={`/qr-codes/${qr.id}`} className={`block rounded-2xl ${cardInteractive}`}>
       <Card className="flex items-center gap-4 p-4 group-hover:bg-[#2b2b2f]">
         <div className="shrink-0 rounded-[10px] bg-bg p-2">
-          <StyledQR value={shortUrlFor(qr.slug)} style={qr.style} size={48} title={`${qr.name} QR code`} />
+          <StyledQR value={qr.shortUrl} style={qr.style} size={48} title={`${qr.name} QR code`} />
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex items-center justify-between gap-3">

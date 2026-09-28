@@ -1,8 +1,10 @@
 "use client";
 
-import Image from "next/image";
+import { LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Avatar } from "@/components/ui/avatar";
+import { useSignOut } from "@/lib/auth/use-sign-out";
 import { cn } from "@/lib/utils/cn";
 import type { User } from "@/types";
 import { Logo } from "./logo";
@@ -11,7 +13,7 @@ import { SIDEBAR_NAV, isActive } from "./nav-items";
 export function UserChip({ user, className }: { user: User; className?: string }) {
   return (
     <div className={cn("flex min-w-0 items-center gap-3", className)}>
-      <Image src={user.avatarUrl} alt="" width={36} height={36} className="size-9 shrink-0 rounded-full object-cover" />
+      <Avatar user={user} />
       <div className="min-w-0 flex-1 leading-tight">
         <p className="truncate text-[13px] font-semibold text-fg">{user.name}</p>
         <p className="truncate text-[11px] text-muted">{user.email}</p>
@@ -22,6 +24,7 @@ export function UserChip({ user, className }: { user: User; className?: string }
 
 export function Sidebar({ user }: { user: User }) {
   const pathname = usePathname();
+  const signOut = useSignOut();
   return (
     <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-line bg-sidebar p-6 lg:flex">
       <Logo href="/qr-codes" />
@@ -50,8 +53,17 @@ export function Sidebar({ user }: { user: User }) {
           })}
         </ul>
       </nav>
-      <div className="mt-auto border-t border-line pt-4">
-        <UserChip user={user} />
+      <div className="mt-auto flex items-center gap-2 border-t border-line pt-4">
+        <UserChip user={user} className="flex-1" />
+        <button
+          type="button"
+          onClick={signOut}
+          aria-label="Sign out"
+          title="Sign out"
+          className="rounded-md p-2 text-subtle transition-colors hover:bg-surface hover:text-fg"
+        >
+          <LogOut className="size-4" />
+        </button>
       </div>
     </aside>
   );
