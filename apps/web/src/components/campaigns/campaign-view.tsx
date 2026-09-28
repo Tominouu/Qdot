@@ -1,0 +1,155 @@
+"use client";
+
+import { Plus } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+import { ChannelsLineChart } from "@/components/analytics/channels-line-chart";
+import { StatCard, StatCardSkeleton } from "@/components/analytics/stat-card";
+import { StyledQR } from "@/components/qr/styled-qr";
+import { Pill } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { Button, ButtonLink } from "@/components/ui/button";
+import { Card, CardTitle, SectionHeading } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getCampaign } from "@/lib/api/campaigns";
+import { shortUrlFor } from "@/lib/config";
+import { useResource } from "@/lib/hooks/use-resource";
+import { formatDate, formatNumber } from "@/lib/utils/format";
+import type { QRCode } from "@/types";
+import { EditCampaignModal } from "./edit-campaign-modal";
+
+const FLAGS: Record<string, string> = { FR: "🇫🇷", BE: "🇧🇪", CH: "🇨🇭", DE: "🇩🇪", US: "🇺🇸", GB: "🇬🇧" };
+
+function CampaignQRCard({ qr }: { qr: QRCode }) {
+  return (
+    <Link
+      href={`/qr-codes/${qr.id}`}
+      className="group block rounded-2xl transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg-strong"
+    >
+      <Card className="flex h-full flex-col gap-7 p-6 transition-colors group-hover:border-line-strong">
+        <div className="flex items-center justify-between">
+          <StyledQR value={shortUrlFor(qr.slug)} style={qr.style} size={48} title={`${qr.name} QR code`} />
+          <Pill className="text-[13px]">{qr.status === "active" ? "Active" : qr.status[0].toUpperCase() + qr.status.slice(1)}</Pill>
+        </div>
+        <div className="flex flex-col gap-1">
+          <h3 className="truncate text-[15px] font-semibold text-fg">{qr.name}</h3>
+          <p className="text-[13px] text-muted tabular-nums">{formatNumber(qr.totalScans)} scans</p>
+        </div>
+      </Card>
+    </Link>
+  );
+}
+
+export function CampaignView({ id }: { id: string }) {
+  const res = useResource(() => getCampaign(id), [id]);
+  const [editing, setEditing] = useState(false);
+
+  if (res.error)
+    return (
+      <div className="flex flex-col items-center gap-4 py-24 text-center">
+        <h1 className="font-display text-2xl font-bold text-fg">Campaign not found</h1>
+        <ButtonLink href="/qr-codes" variant="neutral">
+          Back to QR codes
+        </ButtonLink>
+      </div>
+    );
+
+  const detail = res.data;
+  const a = detail?.analytics;
+
+  return (
+    <div className="flex flex-col gap-10">
+      <header className="flex flex-col gap-3">
+        <Breadcrumb items={[{ label: "Campaigns", href: "/campaigns" }, { label: detail?.campaign.name ?? "…" }]} />
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          {detail ? (
+            <div className="flex min-w-0 flex-col gap-2">
+              <div className="flex items-center gap-3">
+                <h1 className="font-display text-[28px] leading-tight font-black text-fg md:text-[32px]">{detail.campaign.name}</h1>
+                <Pill className="text-[13px] capitalize">{detail.campaign.status}</Pill>
+              </div>
+              <p className="text-[15px] text-muted">{detail.campaign.description}</p>
+            </div>
+          ) : (
+            <Skeleton className="h-16 w-96" />
+          )}
+          <Button variant="inverse" className="h-[42px] self-start md:self-auto" onClick={() => setEditing(true)} disabled={!detail}>
+            Edit Campaign
+          </Button>
+        </div>
+      </header>
+
+      <section aria-label="Campaign metrics" className="grid grid-cols-2 gap-3 md:gap-6 xl:grid-cols-4">
+        {a ? (
+          <>
+            <StatCard label="Total scans" value={formatNumber(a.totalScans)} delta={a.totalScansDelta.value} deltaTone="neutral" />
+            <StatCard label="Unique visitors" value={formatNumber(a.uniqueVisitors)} delta={a.uniqueVisitorsDelta.value} deltaTone="neutral" />
+            <StatCard
+              label="Top country"
+              value={
+                <>
+                  {a.topCountry.name} <span aria-hidden>{FLAGS[a.topCountry.countryCode] ?? ""}</span>
+                </>
+              }
+              deltaLabel={`${a.topCountry.share}% Share`}
+              deltaTone="neutral"
+            />
+            <StatCard label="Conversion rate" value={`${a.conversionRate}%`} delta={a.conversionRateDelta.value} deltaTone="neutral" />
+          </>
+        ) : (
+          Array.from({ length: 4 }, (_, i) => <StatCardSkeleton key={i} />)
+        )}
+      </section>
+
+      <section className="flex flex-col gap-5">
+        <SectionHeading
+          title={`QR Codes (${detail?.qrCodes.length ?? "…"})`}
+          action={
+            <ButtonLink
+              href={`/qr-codes/new?campaign=${id}`}
+              variant="secondary"
+              className="h-[37px] rounded-lg border-line px-4 text-[13px]"
+              leadingIcon={<Plus className="size-3.5" />}
+            >
+              Add QR code
+            </ButtonLink>
+          }
+        />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 xl:grid-cols-4">
+          {detail
+            ? detail.qrCodes.map((qr) => <CampaignQRCard key={qr.id} qr={qr} />)
+            : Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-[154px] rounded-2xl" />)}
+        </div>
+      </section>
+
+      <Card className="flex flex-col gap-6 p-5 md:p-6">
+        <CardTitle>Scans over time · By Channel</CardTitle>
+        {a ? <ChannelsLineChart labels={a.labels} channels={a.channels} /> : <Skeleton className="h-[280px] w-full" />}
+      </Card>
+
+      {detail && a && (
+        <Card className="flex flex-wrap gap-x-8 gap-y-5 p-6">
+          {[
+            ["Created", formatDate(detail.campaign.createdAt)],
+            ["Last modified", formatDate(detail.campaign.updatedAt)],
+            ["Total impressions", `${formatNumber(a.totalScans)} Scans`],
+          ].map(([label, value], i) => (
+            <div key={label} className={`flex flex-col gap-2 ${i > 0 ? "sm:border-l sm:border-line sm:pl-8" : ""}`}>
+              <p className="text-xs text-muted uppercase">{label}</p>
+              <p className="font-display text-base font-bold text-fg">{value}</p>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {detail && (
+        <EditCampaignModal
+          campaign={detail.campaign}
+          open={editing}
+          onClose={() => setEditing(false)}
+          onSaved={(campaign) => res.setData({ ...detail, campaign })}
+        />
+      )}
+    </div>
+  );
+}
