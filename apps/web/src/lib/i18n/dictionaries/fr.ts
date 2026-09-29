@@ -655,6 +655,26 @@ export const fr: Dictionary = {
   },
 
 
+  pwa: {
+    name: "Qdot — QR codes dynamiques",
+    description: "Créez, personnalisez et suivez vos QR codes dynamiques en gardant la maîtrise de vos données.",
+    shortcuts: { newQr: "Nouveau QR code", qrCodes: "Mes QR codes", analytics: "Statistiques" },
+    install: "Installer l'application",
+    installShort: "Installer",
+    installed: "Qdot est installé",
+    iosTitle: "Installer Qdot sur votre iPhone",
+    iosSteps: [
+      "Touchez le bouton Partager dans la barre de Safari.",
+      "Choisissez « Sur l'écran d'accueil ».",
+      "Touchez « Ajouter » : Qdot s'ouvre en plein écran, comme une application.",
+    ],
+    iosSafariOnly: "Dans Chrome ou Edge sur iPhone et iPad, la même option se trouve dans leur menu Partager.",
+    offline: "Vous êtes hors ligne. Les modifications ne peuvent pas être enregistrées tant que la connexion n'est pas revenue.",
+    backOnline: "Connexion rétablie",
+    updateReady: "Une nouvelle version de Qdot est disponible.",
+    reload: "Recharger",
+  },
+
   errors: {
     VALIDATION_ERROR: "Certains champs sont invalides. Vérifiez-les et réessayez.",
     UNAUTHENTICATED: "Votre session a expiré. Veuillez vous reconnecter.",

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test \"src/**/*.test.ts\""
+    "test": "tsx --test \"src/**/*.test.ts\"",
+    "pwa:assets": "tsx scripts/generate-pwa-assets.ts"
   },
   "dependencies": {
     "@qdot/types": "workspace:*",

@@ -647,6 +647,26 @@ export const en = {
   },
 
 
+  pwa: {
+    name: "Qdot — Dynamic QR codes",
+    description: "Create, customize and track dynamic QR codes while keeping control of your data.",
+    shortcuts: { newQr: "New QR code", qrCodes: "My QR codes", analytics: "Analytics" },
+    install: "Install app",
+    installShort: "Install",
+    installed: "Qdot is installed",
+    iosTitle: "Install Qdot on your iPhone",
+    iosSteps: [
+      "Tap the Share button in Safari's toolbar.",
+      "Choose “Add to Home Screen”.",
+      "Tap “Add”: Qdot opens full screen, like an app.",
+    ],
+    iosSafariOnly: "In Chrome or Edge on iPhone and iPad, the same option is in their Share menu.",
+    offline: "You're offline. Changes can't be saved until the connection is back.",
+    backOnline: "Back online",
+    updateReady: "A new version of Qdot is available.",
+    reload: "Reload",
+  },
+
   errors: {
     VALIDATION_ERROR: "Some fields are invalid. Check them and try again.",
     UNAUTHENTICATED: "Your session has expired. Please sign in again.",

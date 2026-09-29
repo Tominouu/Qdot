@@ -6,14 +6,22 @@ import { useI18n } from "@/lib/i18n/provider";
 
 type ToastTone = "success" | "info" | "warning";
 
+export interface ToastOptions {
+  /** Button inside the toast (e.g. "Reload"); clicking it also dismisses the toast. */
+  action?: { label: string; onClick: () => void };
+  /** Milliseconds before auto-dismiss; null keeps it until the user acts. */
+  duration?: number | null;
+}
+
 interface ToastItem {
   id: number;
   tone: ToastTone;
   message: string;
+  action?: ToastOptions["action"];
 }
 
 interface ToastApi {
-  toast: (message: string, tone?: ToastTone) => void;
+  toast: (message: string, tone?: ToastTone, options?: ToastOptions) => void;
 }
 
 const ToastContext = createContext<ToastApi | null>(null);
@@ -33,10 +41,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const dismiss = useCallback((id: number) => setItems((all) => all.filter((t) => t.id !== id)), []);
 
   const toast = useCallback(
-    (message: string, tone: ToastTone = "success") => {
+    (message: string, tone: ToastTone = "success", options: ToastOptions = {}) => {
       const id = nextId.current++;
-      setItems((all) => [...all.slice(-2), { id, tone, message }]);
-      setTimeout(() => dismiss(id), 4000);
+      setItems((all) => [...all.slice(-2), { id, tone, message, action: options.action }]);
+      const duration = options.duration === undefined ? 4000 : options.duration;
+      if (duration !== null) setTimeout(() => dismiss(id), duration);
     },
     [dismiss],
   );
@@ -60,6 +69,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             >
               <Icon className="size-[18px] shrink-0" aria-hidden />
               <p className="flex-1 text-sm text-fg">{t.message}</p>
+              {t.action && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    dismiss(t.id);
+                    t.action?.onClick();
+                  }}
+                  className="shrink-0 rounded-md bg-surface-raised px-3 py-1.5 text-xs font-semibold text-fg-strong transition-colors hover:bg-line"
+                >
+                  {t.action.label}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => dismiss(t.id)}

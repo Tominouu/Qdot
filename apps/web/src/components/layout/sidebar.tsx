@@ -3,6 +3,7 @@
 import { LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { InstallAppButton } from "@/components/pwa/install-button";
 import { Avatar } from "@/components/ui/avatar";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { useSignOut } from "@/lib/auth/use-sign-out";
@@ -56,7 +57,10 @@ export function Sidebar({ user }: { user: User }) {
           })}
         </ul>
       </nav>
-      <LanguageSwitcher className="mt-auto mb-4 self-start" />
+      <div className="mt-auto mb-4 flex flex-col items-start gap-3">
+        <InstallAppButton />
+        <LanguageSwitcher />
+      </div>
       <div className="flex items-center gap-2 border-t border-line pt-4">
         <UserChip user={user} className="flex-1" />
         <button

@@ -66,3 +66,18 @@ Every screen reads and writes through `src/lib/api/*`, which call the API (`apps
 - function patterns (timing/alignment) keep a solid tile shape for dots/diamond.
 
 The editor flags low contrast and the sparse-pattern + logo combination, which remains less reliable.
+
+## Installable app (PWA)
+
+Qdot installs as an app on desktop (Chrome, Edge), Android and iOS/iPadOS.
+
+| Piece | Where |
+| --- | --- |
+| Web app manifest (localized, shortcuts, screenshots) | `src/app/manifest.ts` → `/manifest.webmanifest` |
+| iOS tags (home-screen title, status bar, launch screens, touch icon) | `appleWebApp` / `icons` in `src/app/layout.tsx` |
+| Service worker: cache-first build assets, offline page for navigations, update prompt | `public/sw.js`, `public/offline.html`, `src/lib/pwa/provider.tsx` |
+| Install button (browser prompt on Chromium, Share-sheet steps on iOS) | `src/components/pwa/install-button.tsx` |
+| Icons, maskable/monochrome icons, iOS launch screens, favicon | `pnpm --filter web pwa:assets` (writes `public/pwa`, `src/app/favicon.ico`) |
+
+The service worker only registers in production builds (`next build && next start`); dev unregisters it. Each deploy registers `/sw.js?v=<APP_VERSION>` (`APP_VERSION`, else Netlify `COMMIT_REF` / Vercel commit SHA, else the build time), so users get a "new version" toast and old caches are dropped. Pages and API calls are never cached: they are per-user and per-language. Installing requires HTTPS (or `localhost`).
+

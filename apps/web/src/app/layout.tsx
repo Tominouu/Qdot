@@ -3,6 +3,8 @@ import { Archivo, Geist, Geist_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
 import { I18nProvider } from "@/lib/i18n/provider";
 import { getDictionary, getLocale } from "@/lib/i18n/server";
+import { IOS_SPLASH_SCREENS, PWA_COLORS, splashPath } from "@/lib/pwa/assets";
+import { PwaProvider } from "@/lib/pwa/provider";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -29,11 +31,35 @@ export async function generateMetadata(): Promise<Metadata> {
       template: "%s · Qdot",
     },
     description: t.meta.description,
+    applicationName: "Qdot",
+    // iOS / iPadOS home-screen app. The manifest (app/manifest.ts) covers Chrome, Edge and Android.
+    appleWebApp: {
+      capable: true,
+      title: "Qdot",
+      // Opaque bar above the content: no layout work needed around the notch / Dynamic Island.
+      statusBarStyle: "black",
+      startupImage: IOS_SPLASH_SCREENS.map((s) => ({
+        url: splashPath(s),
+        media: `screen and (device-width: ${s.width}px) and (device-height: ${s.height}px) and (-webkit-device-pixel-ratio: ${s.ratio}) and (orientation: portrait)`,
+      })),
+    },
+    icons: {
+      // favicon.ico comes from the app/favicon.ico file convention.
+      icon: [{ url: "/pwa/icon-192.png", sizes: "192x192", type: "image/png" }],
+      apple: [{ url: "/pwa/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    },
+    // Phone numbers in QR content previews must not turn into iOS call links.
+    formatDetection: { telephone: false, email: false, address: false },
+    other: {
+      // Pre-manifest iOS versions (≤ 16) still read this one.
+      "apple-mobile-web-app-capable": "yes",
+    },
   };
 }
 
 export const viewport: Viewport = {
-  themeColor: "#18181b",
+  themeColor: PWA_COLORS.background,
+  colorScheme: "dark",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -45,7 +71,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full">
         <I18nProvider locale={locale}>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            <PwaProvider>{children}</PwaProvider>
+          </ToastProvider>
         </I18nProvider>
       </body>
     </html>

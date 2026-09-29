@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { Avatar } from "@/components/ui/avatar";
+import { InstallAppButton } from "@/components/pwa/install-button";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getMe } from "@/lib/api/auth";
@@ -63,6 +64,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <header className="flex items-center justify-between px-4 pt-4 sm:px-6 lg:hidden">
           <Logo href="/qr-codes" />
           <div className="flex items-center gap-3">
+            <InstallAppButton variant="icon" />
             <LanguageSwitcher />
             <Link href="/settings" aria-label={t.nav.accountSettings} className="rounded-full">
               <Avatar user={user} />

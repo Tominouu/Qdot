@@ -4,6 +4,7 @@ import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/layout/logo";
+import { InstallAppButton } from "@/components/pwa/install-button";
 import { ButtonLink } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { REPO_URL } from "@/lib/config";
@@ -45,6 +46,7 @@ export function MarketingHeader() {
           </ul>
         </nav>
         <div className="hidden items-center gap-4 md:flex">
+          <InstallAppButton variant="link" />
           <LanguageSwitcher />
           <Link href="/sign-in" className="text-sm font-medium text-fg transition-colors hover:text-white">
             {t.marketing.signIn}
@@ -84,6 +86,7 @@ export function MarketingHeader() {
           </ButtonLink>
           <ButtonLink href="/onboarding">{t.marketing.getStarted}</ButtonLink>
         </div>
+        <InstallAppButton className="mt-4" />
         <LanguageSwitcher className="mt-4" />
       </div>
     </header>
