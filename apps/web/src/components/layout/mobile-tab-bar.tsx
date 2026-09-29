@@ -16,7 +16,7 @@ function Tab({ item, pathname }: { item: NavItem; pathname: string }) {
       href={item.href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex min-h-12 flex-1 flex-col items-center justify-center gap-1 text-[11px] transition-colors",
+        "flex min-h-12 flex-1 flex-col items-center justify-center gap-1 text-[11px] transition-[color,transform] duration-150 active:scale-90",
         active ? "font-semibold text-fg-strong" : "text-subtle hover:text-fg",
       )}
     >
@@ -33,7 +33,7 @@ export function MobileTabBar() {
   return (
     <nav
       aria-label={t.nav.main}
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-sidebar/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-sidebar/95 pb-[env(safe-area-inset-bottom)] backdrop-blur select-none lg:hidden vt-tabbar"
     >
       <div className="relative mx-auto flex h-[68px] max-w-lg items-center px-2">
         {MOBILE_TABS.left.map((t) => (

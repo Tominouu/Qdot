@@ -14,6 +14,7 @@ import { errorMessage } from "@/lib/i18n/errors";
 import { useI18n } from "@/lib/i18n/provider";
 import { Logo } from "./logo";
 import { MobileTabBar } from "./mobile-tab-bar";
+import { PageTransition } from "./route-transition";
 import { Sidebar } from "./sidebar";
 
 /**
@@ -61,7 +62,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-dvh">
       <Sidebar user={user} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between px-4 pt-4 sm:px-6 lg:hidden">
+        <header className="vt-appbar flex items-center justify-between bg-bg px-4 pt-4 sm:px-6 lg:hidden">
           <Logo href="/qr-codes" />
           <div className="flex items-center gap-3">
             <InstallAppButton variant="icon" />
@@ -72,7 +73,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main id="main" className="flex-1 px-4 pt-6 pb-32 sm:px-6 lg:px-10 lg:pt-10 lg:pb-16">
-          <div className="mx-auto w-full max-w-[1120px]">{children}</div>
+          <div className="mx-auto w-full max-w-[1120px]">
+            <PageTransition>{children}</PageTransition>
+          </div>
         </main>
       </div>
       <MobileTabBar />

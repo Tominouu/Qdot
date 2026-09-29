@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Geist, Geist_Mono } from "next/font/google";
+import { RouteTransitions } from "@/components/layout/route-transition";
 import { ToastProvider } from "@/components/ui/toast";
 import { I18nProvider } from "@/lib/i18n/provider";
 import { getDictionary, getLocale } from "@/lib/i18n/server";
@@ -72,7 +73,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full">
         <I18nProvider locale={locale}>
           <ToastProvider>
-            <PwaProvider>{children}</PwaProvider>
+            <PwaProvider>
+              <RouteTransitions>{children}</RouteTransitions>
+            </PwaProvider>
           </ToastProvider>
         </I18nProvider>
       </body>

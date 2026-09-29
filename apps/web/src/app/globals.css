@@ -183,3 +183,225 @@ dialog::backdrop {
     transition-duration: 1ms !important;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Page transitions (components/layout/route-transition.tsx)           */
+/* Phones only: desktop keeps instant navigation.                      */
+/* <html data-nav> holds the direction of the current navigation.     */
+/* ------------------------------------------------------------------ */
+
+/* Taps must never be swallowed while a transition overlay is up. */
+::view-transition {
+  pointer-events: none;
+}
+
+@media (min-width: 768px) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    /* iOS navigation-controller feel: fast start, long soft landing. */
+    --page-ease: cubic-bezier(0.32, 0.72, 0, 1);
+    --page-duration: 420ms;
+    --sheet-duration: 460ms;
+  }
+
+  /* The chrome (bottom tab bar, app header) never moves: only page content animates. */
+  ::view-transition-old(root) {
+    display: none;
+  }
+  ::view-transition-new(root) {
+    animation: none;
+  }
+
+  /*
+   * Anchored chrome: the bottom tab bar and the app header are their own
+   * snapshots, drawn above the moving pages and never animated, like a native
+   * tab bar controller. When the editor sheet comes up, they stay with the
+   * screen underneath it instead.
+   */
+  .vt-tabbar {
+    view-transition-name: qdot-tabbar;
+  }
+  .vt-appbar {
+    view-transition-name: qdot-appbar;
+  }
+  ::view-transition-group(qdot-tabbar),
+  ::view-transition-group(qdot-appbar) {
+    animation: none;
+    z-index: 100;
+  }
+  ::view-transition-old(qdot-tabbar),
+  ::view-transition-old(qdot-appbar) {
+    display: none;
+  }
+  ::view-transition-new(qdot-tabbar),
+  ::view-transition-new(qdot-appbar) {
+    animation: none;
+  }
+  html[data-nav="up"]::view-transition-group(qdot-tabbar),
+  html[data-nav="up"]::view-transition-group(qdot-appbar),
+  html[data-nav="down"]::view-transition-group(qdot-tabbar),
+  html[data-nav="down"]::view-transition-group(qdot-appbar) {
+    z-index: 1;
+  }
+  html[data-nav="up"]::view-transition-old(qdot-tabbar),
+  html[data-nav="up"]::view-transition-old(qdot-appbar) {
+    display: block;
+    animation: chrome-dim var(--sheet-duration) var(--page-ease) both;
+  }
+  html[data-nav="down"]::view-transition-new(qdot-tabbar),
+  html[data-nav="down"]::view-transition-new(qdot-appbar) {
+    animation: chrome-undim var(--sheet-duration) var(--page-ease) both;
+  }
+
+  /* Snapshots slide over each other: opaque pages, no additive blending. */
+  ::view-transition-old(.page-out),
+  ::view-transition-new(.page-in) {
+    mix-blend-mode: normal;
+    animation-fill-mode: both;
+    will-change: transform, opacity;
+  }
+
+  /* Push (deeper): the new screen covers the old one from the right edge. */
+  html[data-nav="forward"]::view-transition-group(.page-in) {
+    z-index: 2;
+    box-shadow: -16px 0 40px rgb(0 0 0 / 0.45);
+  }
+  html[data-nav="forward"]::view-transition-new(.page-in) {
+    animation: page-from-right var(--page-duration) var(--page-ease) both;
+  }
+  html[data-nav="forward"]::view-transition-old(.page-out) {
+    animation: page-recede-left var(--page-duration) var(--page-ease) both;
+  }
+
+  /* Pop (back): the top screen slides away to the right, the previous one comes forward. */
+  html[data-nav="back"]::view-transition-group(.page-out) {
+    z-index: 2;
+    box-shadow: -16px 0 40px rgb(0 0 0 / 0.45);
+  }
+  html[data-nav="back"]::view-transition-old(.page-out) {
+    animation: page-to-right var(--page-duration) var(--page-ease) both;
+  }
+  html[data-nav="back"]::view-transition-new(.page-in) {
+    animation: page-return-left var(--page-duration) var(--page-ease) both;
+  }
+
+  /* Editor: presented as a sheet from the bottom, dismissed downwards. */
+  html[data-nav="up"]::view-transition-group(.page-in) {
+    z-index: 2;
+  }
+  html[data-nav="up"]::view-transition-new(.page-in) {
+    animation: sheet-from-bottom var(--sheet-duration) var(--page-ease) both;
+  }
+  html[data-nav="up"]::view-transition-old(.page-out) {
+    animation: sheet-underlay-in var(--sheet-duration) var(--page-ease) both;
+  }
+  html[data-nav="down"]::view-transition-group(.page-out) {
+    z-index: 2;
+  }
+  html[data-nav="down"]::view-transition-old(.page-out) {
+    animation: sheet-to-bottom var(--sheet-duration) var(--page-ease) both;
+  }
+  html[data-nav="down"]::view-transition-new(.page-in) {
+    animation: sheet-underlay-out var(--sheet-duration) var(--page-ease) both;
+  }
+
+  /* Sibling screens (tabs): quick crossfade, the new one settling in slightly. */
+  html[data-nav="fade"]::view-transition-old(.page-out) {
+    animation: page-fade-out 140ms ease-out both;
+  }
+  html[data-nav="fade"]::view-transition-new(.page-in) {
+    animation: page-fade-in 220ms ease-out 60ms both;
+  }
+
+  html[data-nav="none"]::view-transition-old(.page-out),
+  html[data-nav="none"]::view-transition-new(.page-in) {
+    animation: none;
+  }
+
+  /* Motion-sensitive users: same cues as a gentle crossfade, no travel. */
+  @media (prefers-reduced-motion: reduce) {
+    html[data-nav]::view-transition-old(.page-out) {
+      animation: page-fade-out 120ms ease-out both !important;
+    }
+    html[data-nav]::view-transition-new(.page-in) {
+      animation: page-fade-in 160ms ease-out both !important;
+    }
+    html[data-nav]::view-transition-group(*) {
+      box-shadow: none !important;
+    }
+  }
+}
+
+/* Viewport units, not %: a snapshot is as tall (or wide) as the whole page, not the screen. */
+@keyframes page-from-right {
+  from {
+    transform: translateX(100vw);
+  }
+}
+@keyframes page-recede-left {
+  to {
+    transform: translateX(-28%);
+    opacity: 0.45;
+  }
+}
+@keyframes page-to-right {
+  to {
+    transform: translateX(100vw);
+  }
+}
+@keyframes page-return-left {
+  from {
+    transform: translateX(-28%);
+    opacity: 0.45;
+  }
+}
+@keyframes sheet-from-bottom {
+  from {
+    transform: translateY(100vh);
+  }
+}
+@keyframes sheet-to-bottom {
+  to {
+    transform: translateY(100vh);
+  }
+}
+@keyframes chrome-dim {
+  to {
+    opacity: 0.4;
+  }
+}
+@keyframes chrome-undim {
+  from {
+    opacity: 0.4;
+  }
+}
+@keyframes sheet-underlay-in {
+  to {
+    transform: scale(0.94);
+    opacity: 0.4;
+  }
+}
+@keyframes sheet-underlay-out {
+  from {
+    transform: scale(0.94);
+    opacity: 0.4;
+  }
+}
+@keyframes page-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
