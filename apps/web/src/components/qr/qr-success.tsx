@@ -11,6 +11,7 @@ import { getQRCode } from "@/lib/api/qr";
 import { useResource } from "@/lib/hooks/use-resource";
 import { useI18n } from "@/lib/i18n/provider";
 import { downloadQRCode, type ExportFormat } from "@/lib/qr/export";
+import { qrPayload } from "@/lib/qr/types";
 import { ShareQRModal } from "./qr-modals";
 import { StyledQR } from "./styled-qr";
 
@@ -34,7 +35,7 @@ export function QRSuccess({ id }: { id: string }) {
 
   const download = async (format: ExportFormat) => {
     if (!qr) return;
-    await downloadQRCode({ payload: qr.shortUrl, style: qr.style, name: qr.name, format });
+    await downloadQRCode({ payload: qrPayload(qr), design: qr.design, name: qr.name, format });
     toast(s.downloaded(format.toUpperCase()));
   };
 
@@ -56,8 +57,8 @@ export function QRSuccess({ id }: { id: string }) {
 
       <div className="flex w-full max-w-[335px] animate-fade-up flex-col items-center gap-6 rounded-3xl border border-line bg-surface p-8 shadow-[0_0_60px_rgba(255,255,255,0.06)] [animation-delay:200ms]">
         {qr ? (
-          <div className="w-full max-w-[240px]">
-            <StyledQR value={qr.shortUrl} style={qr.style} title={t.common.qrEncodes(qr.name, qr.shortUrl)} />
+          <div className="w-full max-w-[240px] overflow-hidden rounded-2xl" style={qr.design.background.transparent ? undefined : { background: qr.design.background.color }}>
+            <StyledQR value={qrPayload(qr)} design={qr.design} framed title={t.common.qrEncodes(qr.name, qrPayload(qr))} />
           </div>
         ) : (
           <Skeleton className="size-[240px]" />
@@ -78,23 +79,30 @@ export function QRSuccess({ id }: { id: string }) {
         <Button variant="neutral" className="h-[37px] rounded-lg bg-transparent px-4 text-[13px]" onClick={() => download("png")} disabled={!qr}>
           {s.downloadPng}
         </Button>
-        <Button
-          variant="ghost"
-          className="h-[37px] rounded-lg px-4 text-[13px]"
-          disabled={!qr}
-          onClick={async () => {
-            if (!qr) return;
-            await copyText(qr.shortUrl);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1600);
-            toast(t.common.linkCopied, "info");
-          }}
-        >
-          {copied ? s.copied : s.copyLink}
+        <Button variant="neutral" className="h-[37px] rounded-lg bg-transparent px-4 text-[13px]" onClick={() => download("pdf")} disabled={!qr}>
+          {s.downloadPdf}
         </Button>
-        <Button variant="ghost" className="h-[37px] rounded-lg px-4 text-[13px]" onClick={() => setSharing(true)} disabled={!qr}>
-          {t.common.share}
-        </Button>
+        {qr?.mode !== "static" && (
+          <>
+            <Button
+              variant="ghost"
+              className="h-[37px] rounded-lg px-4 text-[13px]"
+              disabled={!qr}
+              onClick={async () => {
+                if (!qr) return;
+                await copyText(qr.shortUrl);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1600);
+                toast(t.common.linkCopied, "info");
+              }}
+            >
+              {copied ? s.copied : s.copyLink}
+            </Button>
+            <Button variant="ghost" className="h-[37px] rounded-lg px-4 text-[13px]" onClick={() => setSharing(true)} disabled={!qr}>
+              {t.common.share}
+            </Button>
+          </>
+        )}
       </div>
 
       <div className="flex items-center gap-8 text-sm font-semibold">

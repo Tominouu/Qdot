@@ -1,9 +1,11 @@
 import { randomBytes } from "node:crypto";
 import { type Database, qrCodes, type QRCodeRow, scanEvents } from "@qdot/database";
-import type { QRCode, QRStatus } from "@qdot/types";
+import { normalizeDesign, type QRCode, type QRStatus } from "@qdot/types";
 import { and, count, countDistinct, desc, eq, ilike, inArray, max, or, type SQL } from "drizzle-orm";
 import type { Env } from "../env";
 import { notFound } from "../lib/errors";
+import { openContent } from "./qr-content";
+import type { SecretBox } from "./secrets";
 
 /** 31 characters, no look-alikes (0/o, 1/l/i). */
 const CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
@@ -30,17 +32,26 @@ export interface QRStats {
   lastScanAt: Date | string | null;
 }
 
-export function toQRDTO(row: QRCodeRow, stats: QRStats | null, env: Env): QRCode {
+/**
+ * Row → API shape. Pass `secrets` only when the owner is viewing or editing this
+ * one code: without it (lists, campaigns) secrets such as Wi-Fi passwords are stripped.
+ * Legacy rows (v1 style, no content) are upgraded here, never rewritten behind the owner's back.
+ */
+export function toQRDTO(row: QRCodeRow, stats: QRStats | null, env: Env, secrets: SecretBox | null = null): QRCode {
+  const { content, redacted } = openContent(row, secrets);
   return {
     id: row.id,
     code: row.code,
     shortUrl: `${env.QR_REDIRECT_BASE_URL}/r/${row.code}`,
     name: row.name,
-    type: "url",
+    type: row.contentType,
+    mode: row.mode,
     category: row.category,
-    destinationUrl: row.destinationUrl,
+    content,
+    contentRedacted: redacted,
+    destinationUrl: row.mode === "dynamic" ? row.destinationUrl : null,
     status: row.status,
-    style: row.configuration,
+    design: normalizeDesign(row.configuration),
     campaignId: row.campaignId,
     totalScans: stats?.total ?? 0,
     uniqueScans: stats?.unique ?? 0,

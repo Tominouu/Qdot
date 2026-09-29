@@ -8,6 +8,8 @@ import { AppError, isUniqueViolation, notFound, parse } from "../lib/errors";
 import { currentUser, requireUser } from "../plugins/auth";
 import { qrCodeAnalytics } from "../services/analytics";
 import { generateCode, getOwnedQRCode, listQRCodesWithStats, toQRDTO } from "../services/qr-codes";
+import { sealContent } from "../services/qr-content";
+import type { SecretBox } from "../services/secrets";
 
 const ListQuerySchema = z.object({
   status: z.enum(QR_STATUSES).optional(),
@@ -24,7 +26,7 @@ async function assertCampaignOwned(db: Database, userId: string, campaignId: str
   if (!c) throw notFound("CAMPAIGN_NOT_FOUND", "Campaign not found.");
 }
 
-export async function qrRoutes(app: FastifyInstance, { db, env }: { db: Database; env: Env }) {
+export async function qrRoutes(app: FastifyInstance, { db, env, secrets }: { db: Database; env: Env; secrets: SecretBox }) {
   app.addHook("preHandler", requireUser);
 
   app.post("/qr", async (request, reply) => {
@@ -43,12 +45,15 @@ export async function qrRoutes(app: FastifyInstance, { db, env }: { db: Database
             code: generateCode(),
             name: input.name || "Untitled QR code",
             category: input.category,
-            destinationUrl: input.destinationUrl,
+            mode: input.mode,
+            contentType: input.content.type,
+            content: sealContent(input.content, secrets),
+            destinationUrl: input.mode === "dynamic" && input.content.type === "url" ? input.content.url : null,
             status: input.status,
-            configuration: input.style,
+            configuration: input.design,
           })
           .returning();
-        return reply.status(201).send(toQRDTO(row, null, env));
+        return reply.status(201).send(toQRDTO(row, null, env, secrets));
       } catch (err) {
         if (!isUniqueViolation(err)) throw err;
       }
@@ -67,7 +72,7 @@ export async function qrRoutes(app: FastifyInstance, { db, env }: { db: Database
     const user = currentUser(request);
     const row = await getOwnedQRCode(db, user.id, request.params.id);
     const [item] = await listQRCodesWithStats(db, user.id, { ids: [row.id] });
-    return toQRDTO(item.row, item.stats, env);
+    return toQRDTO(item.row, item.stats, env, secrets);
   });
 
   app.patch<{ Params: { id: string } }>("/qr/:id", async (request) => {
@@ -79,14 +84,21 @@ export async function qrRoutes(app: FastifyInstance, { db, env }: { db: Database
     const patch: Partial<QRCodeRow> = { updatedAt: new Date() };
     if (input.name !== undefined) patch.name = input.name || "Untitled QR code";
     if (input.category !== undefined) patch.category = input.category;
-    if (input.destinationUrl !== undefined) patch.destinationUrl = input.destinationUrl;
-    if (input.style !== undefined) patch.configuration = input.style;
+    if (input.content !== undefined) {
+      // A dynamic code's printed image points at /r/:code, which only knows how to redirect to a URL.
+      if (row.mode === "dynamic" && input.content.type !== "url")
+        throw new AppError(400, "VALIDATION_ERROR", "Dynamic QR codes can only point to a URL.", { content: "Dynamic QR codes can only point to a URL." });
+      patch.contentType = input.content.type;
+      patch.content = sealContent(input.content, secrets);
+      if (row.mode === "dynamic" && input.content.type === "url") patch.destinationUrl = input.content.url;
+    }
+    if (input.design !== undefined) patch.configuration = input.design;
     if (input.campaignId !== undefined) patch.campaignId = input.campaignId;
     if (input.status !== undefined) patch.status = input.status;
 
     await db.update(qrCodes).set(patch).where(eq(qrCodes.id, row.id));
     const [item] = await listQRCodesWithStats(db, user.id, { ids: [row.id] });
-    return toQRDTO(item.row, item.stats, env);
+    return toQRDTO(item.row, item.stats, env, secrets);
   });
 
   app.delete<{ Params: { id: string } }>("/qr/:id", async (request, reply) => {

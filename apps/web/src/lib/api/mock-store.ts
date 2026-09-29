@@ -1,5 +1,5 @@
 import { CAMPAIGNS, type MockCampaign } from "@/data/campaigns";
-import { QR_CODES } from "@/data/qr-codes";
+import { QR_CODES, upgradeMockQR } from "@/data/qr-codes";
 import { PRIVACY_SETTINGS } from "@/data/user";
 import type { PrivacySettings, QRCode } from "@/types";
 
@@ -34,7 +34,10 @@ function load(): MockState {
   if (typeof window !== "undefined") {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) state = { ...state, ...(JSON.parse(raw) as Partial<MockState>) };
+      if (raw) {
+        const saved = JSON.parse(raw) as Partial<MockState>;
+        state = { ...state, ...saved, qrCodes: (saved.qrCodes ?? state.qrCodes).map(upgradeMockQR) };
+      }
     } catch {
       // Corrupt or unavailable storage: fall back to seed data.
     }

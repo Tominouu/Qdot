@@ -36,17 +36,18 @@ export async function redirectRoutes(app: FastifyInstance, { db, geo }: { db: Da
       if (!CODE_PATTERN.test(code)) return messagePage(reply, 404, "QR code not found", "This link doesn't match any Qdot code.");
 
       const [qr] = await db
-        .select({ id: qrCodes.id, destinationUrl: qrCodes.destinationUrl, status: qrCodes.status })
+        .select({ id: qrCodes.id, destinationUrl: qrCodes.destinationUrl, status: qrCodes.status, mode: qrCodes.mode })
         .from(qrCodes)
         .where(eq(qrCodes.code, code))
         .limit(1);
-      if (!qr) return messagePage(reply, 404, "QR code not found", "This link doesn't match any Qdot code.");
+      // Static codes encode their content directly; their public code never redirects.
+      if (!qr || qr.mode !== "dynamic") return messagePage(reply, 404, "QR code not found", "This link doesn't match any Qdot code.");
       if (qr.status !== "active") return messagePage(reply, 410, "This QR code is paused", "Its owner has temporarily disabled it. Please try again later.");
 
       // Defense in depth: only ever redirect to http(s), even if bad data slipped in.
       let destination: URL;
       try {
-        destination = new URL(qr.destinationUrl);
+        destination = new URL(qr.destinationUrl ?? "");
         if (destination.protocol !== "http:" && destination.protocol !== "https:") throw new Error("bad protocol");
       } catch {
         request.log.error({ qrId: qr.id }, "Stored destination is not a valid http(s) URL");

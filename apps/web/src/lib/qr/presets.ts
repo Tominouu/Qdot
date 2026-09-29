@@ -1,24 +1,29 @@
-import type { QREyeShape, QRPattern, QRStyle } from "@/types";
+import { DEFAULT_QR_DESIGN, type QRDesign } from "@/types";
 
-/** The Qdot v2 signature style: light tiles on zinc with coral eye centers. */
-export const DEFAULT_QR_STYLE: QRStyle = {
-  pattern: "rounded",
-  eyeShape: "rounded",
-  foreground: "#FAFAFA",
-  background: "#27272A",
-  eyeColor: "#E8503A",
-  textured: true,
-  logo: null,
-};
+export { DEFAULT_QR_DESIGN };
 
-/** Labels live in the `editor.patterns` / `editor.eyes` dictionaries. */
-export const PATTERN_OPTIONS: QRPattern[] = ["squares", "dots", "rounded", "diamond"];
-
-export const EYE_OPTIONS: QREyeShape[] = ["classic", "rounded", "leaf", "innerDot"];
+/** Returns a copy of the default design with some parts replaced. */
+export function withDesign(patch: (d: QRDesign) => void): QRDesign {
+  const d = structuredClone(DEFAULT_QR_DESIGN);
+  patch(d);
+  return d;
+}
 
 /** Style presets shown in the landing "Beautiful customization" section. */
-export const SHOWCASE_PRESETS: { name: string; style: QRStyle }[] = [
-  { name: "Gradient Tech", style: DEFAULT_QR_STYLE },
-  { name: "Amber Circles", style: { ...DEFAULT_QR_STYLE, pattern: "dots", eyeShape: "innerDot" } },
-  { name: "Classic Tech", style: { ...DEFAULT_QR_STYLE, pattern: "squares", eyeShape: "classic" } },
+export const SHOWCASE_PRESETS: { name: string; design: QRDesign }[] = [
+  { name: "Gradient Tech", design: DEFAULT_QR_DESIGN },
+  {
+    name: "Amber Circles",
+    design: withDesign((d) => {
+      d.modules.shape = "circle";
+      d.eyes = { ...d.eyes, outer: "rounded", inner: "rounded", center: "circle" };
+    }),
+  },
+  {
+    name: "Classy Sunset",
+    design: withDesign((d) => {
+      d.modules = { shape: "classy-rounded", textured: false, fill: { type: "linear", rotation: 45, stops: [{ offset: 0, color: "#FAFAFA" }, { offset: 1, color: "#F4A261" }] } };
+      d.eyes = { ...d.eyes, outer: "circle", inner: "circle", center: "dot" };
+    }),
+  },
 ];

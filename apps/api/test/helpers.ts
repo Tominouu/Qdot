@@ -33,7 +33,8 @@ export const UA = {
  * Real Postgres (PGlite, in-memory) behind a Postgres wire-protocol socket, so
  * the API runs its normal postgres-js driver and migrations. No install needed.
  */
-export async function startTestApi() {
+/** `logs`: collect every log line (info and above) to assert nothing sensitive is logged. */
+export async function startTestApi(opts: { logs?: string[] } = {}) {
   const pg = await PGlite.create();
   const port = 55000 + Math.floor(Math.random() * 5000);
   const server = new PGLiteSocketServer({ db: pg, port, host: "127.0.0.1", maxConnections: 10 });
@@ -51,7 +52,12 @@ export async function startTestApi() {
   // connections' protocol messages, so tests use one pooled connection.
   const { db, close } = createDatabase(url, { maxConnections: 1 });
   await migrate(db, { migrationsFolder: fileURLToPath(new URL("../../../packages/database/migrations", import.meta.url)) });
-  const app = await buildApp({ env, db, geo: testGeo, logger: process.env.TEST_LOG ? { level: "error" } : false });
+  const logger = opts.logs
+    ? { level: "info", stream: { write: (line: string) => void opts.logs!.push(line) } }
+    : process.env.TEST_LOG
+      ? { level: "error" }
+      : false;
+  const app = await buildApp({ env, db, geo: testGeo, logger });
 
   return {
     app,

@@ -105,7 +105,9 @@ export const legalEn: LegalDocs = {
         body: [
           {
             list: [
-              "Data: email address, name, password (stored only as an Argon2id hash, never in plain text), account creation date, and the QR codes and campaigns you create (names, destination addresses, styles, logos).",
+              "Data: email address, name, password (stored only as an Argon2id hash, never in plain text), account creation date, and the QR codes and campaigns you create (names, encoded content, styles, logos and images).",
+              "QR code content: depending on the type, a web address, business card details (vCard), an email address with subject and message, a phone number and SMS text, or a Wi-Fi network name and password. This is what you enter; if it concerns other people (for instance a business card), you are responsible for having their consent.",
+              "Wi-Fi passwords: they are kept so you can reopen, edit and re-export the QR code. They are encrypted at rest (AES-256-GCM) with a server-side key, never written to technical logs, never returned in QR code lists, and only decrypted when you view or edit that QR code. They are deleted with the QR code or the account.",
               "Purposes: creating and securing your account, providing the service (creating, editing and redirecting QR codes, analytics), contacting you about the service.",
               "Legal basis: performance of our contract, i.e. the terms of use (GDPR article 6.1.b).",
               "Retention: for the lifetime of the account. Deleting the account deletes its QR codes, campaigns and statistics. Sign-in sessions expire automatically after 30 days.",
@@ -153,7 +155,7 @@ export const legalEn: LegalDocs = {
         id: "security",
         heading: "Security",
         body: [
-          "Traffic is encrypted (HTTPS), passwords are hashed with Argon2id, the session cookie is inaccessible to scripts (HttpOnly), and only a hash of the session token is stored in the database.",
+          "Traffic is encrypted (HTTPS), account passwords are hashed with Argon2id, Wi-Fi passwords are encrypted with AES-256-GCM, the session cookie is inaccessible to scripts (HttpOnly), and only a hash of the session token is stored in the database.",
         ],
       },
       {

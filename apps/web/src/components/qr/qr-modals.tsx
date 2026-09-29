@@ -9,7 +9,8 @@ import { useToast } from "@/components/ui/toast";
 import { useI18n } from "@/lib/i18n/provider";
 import { downloadQRCode, type ExportFormat } from "@/lib/qr/export";
 import type { QRCode } from "@/types";
-import { StyledQR } from "./styled-qr";
+import { qrPayload } from "@/lib/qr/types";
+import { QRThumbnail } from "./styled-qr";
 
 interface QRModalProps {
   qr: QRCode;
@@ -25,7 +26,7 @@ export function ShareQRModal({ qr, open, onClose }: QRModalProps) {
     <Modal open={open} onClose={onClose} title={t.modals.shareTitle}>
       <div className="flex items-center gap-4">
         <div className="shrink-0 rounded-lg bg-bg p-1.5">
-          <StyledQR value={link} style={qr.style} size={60} title={t.common.qrCodeOf(qr.name)} />
+          <QRThumbnail value={qrPayload(qr)} design={qr.design} size={52} title={t.common.qrCodeOf(qr.name)} />
         </div>
         <div className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-[10px] border border-line bg-surface px-3">
           <p className="min-w-0 flex-1 truncate text-sm text-fg">{link}</p>
@@ -51,6 +52,7 @@ const RESOLUTIONS = ["3000", "1024", "512"] as const;
 export function ExportQRModal({ qr, open, onClose }: QRModalProps) {
   const [format, setFormat] = useState<ExportFormat>("svg");
   const [resolution, setResolution] = useState("3000");
+  const [printSize, setPrintSize] = useState<"30" | "50" | "100">("50");
   const [busy, setBusy] = useState(false);
   const { toast } = useToast();
   const { t } = useI18n();
@@ -69,13 +71,28 @@ export function ExportQRModal({ qr, open, onClose }: QRModalProps) {
               options={[
                 { value: "svg", label: m.svg },
                 { value: "png", label: m.png },
+                { value: "pdf", label: m.pdf },
               ]}
             />
           )}
         </Field>
-        <Field label={m.resolution}>
-          {(id) => <Select id={id} className="w-full" value={resolution} onChange={(e) => setResolution(e.target.value)} options={RESOLUTIONS.map((r) => ({ value: r, label: m.resolutions[r] }))} />}
-        </Field>
+        {format === "pdf" ? (
+          <Field label={m.printSize}>
+            {(id) => (
+              <Select
+                id={id}
+                className="w-full"
+                value={printSize}
+                onChange={(e) => setPrintSize(e.target.value as typeof printSize)}
+                options={(["30", "50", "100"] as const).map((v) => ({ value: v, label: m.pdfSizes[v] }))}
+              />
+            )}
+          </Field>
+        ) : (
+          <Field label={m.resolution}>
+            {(id) => <Select id={id} className="w-full" value={resolution} onChange={(e) => setResolution(e.target.value)} options={RESOLUTIONS.map((r) => ({ value: r, label: m.resolutions[r] }))} />}
+          </Field>
+        )}
       </div>
       <Button
         size="sm"
@@ -84,7 +101,7 @@ export function ExportQRModal({ qr, open, onClose }: QRModalProps) {
         onClick={async () => {
           setBusy(true);
           try {
-            await downloadQRCode({ payload: qr.shortUrl, style: qr.style, name: qr.name, format, pixelSize: Number(resolution) });
+            await downloadQRCode({ payload: qrPayload(qr), design: qr.design, name: qr.name, format, pixelSize: Number(resolution), printSizeMm: Number(printSize) });
             toast(m.exported(format.toUpperCase()));
             onClose();
           } catch {

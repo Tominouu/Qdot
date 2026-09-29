@@ -1,4 +1,4 @@
-import type { CreateQRCodeInput, QRCategory, QRContentType, QRStyle, User } from "@qdot/types";
+import type { CreateQRCodeInput, QRCategory, QRContent, QRContentType, QRDesign, QRMode, User } from "@qdot/types";
 
 export type AuthProvider = "password" | "google";
 
@@ -23,11 +23,13 @@ export interface PendingQRCode {
     /** Placeholder code for the live preview; the real code is assigned by the API on save. */
     previewCode: string;
     name: string;
-    type: QRContentType;
     category: QRCategory;
     campaignId: string | null;
-    input: string;
-    style: QRStyle;
+    mode: QRMode;
+    type: QRContentType;
+    /** Per-type content, so switching types in the editor never loses what was typed. */
+    contents: Partial<Record<QRContentType, QRContent>>;
+    design: QRDesign;
   };
   /** Payload sent to `createQRCode` once the user is authenticated. */
   create: CreateQRCodeInput;

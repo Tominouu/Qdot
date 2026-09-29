@@ -7,6 +7,11 @@ const EnvSchema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.string().url(),
   SESSION_SECRET: z.string().min(32, "SESSION_SECRET must be at least 32 characters"),
+  /**
+   * Key material for encrypting secrets inside QR content (Wi-Fi passwords).
+   * Optional: derived from SESSION_SECRET when unset. Set it so SESSION_SECRET can be rotated independently.
+   */
+  DATA_ENCRYPTION_KEY: z.string().min(32, "DATA_ENCRYPTION_KEY must be at least 32 characters").optional(),
   /** Comma-separated list of allowed browser origins (the Qdot web app). */
   CORS_ORIGIN: z
     .string()

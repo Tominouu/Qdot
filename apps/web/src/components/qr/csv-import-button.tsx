@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { createQRCode } from "@/lib/api/qr";
 import { useI18n } from "@/lib/i18n/provider";
-import { DEFAULT_QR_STYLE } from "@/lib/qr/presets";
+import { DEFAULT_QR_DESIGN } from "@/lib/qr/presets";
 
 /** Parses `name,url` rows (header optional) and creates one QR code per row. */
 function parseCsv(text: string): { name: string; url: string }[] {
@@ -42,7 +42,7 @@ export function CsvImportButton({ onImported }: { onImported: () => void }) {
           }
           setBusy(true);
           for (const row of rows) {
-            await createQRCode({ name: row.name, destinationUrl: row.url, type: "url", category: "website", style: DEFAULT_QR_STYLE });
+            await createQRCode({ name: row.name, mode: "dynamic", content: { type: "url", url: row.url }, category: "website", design: DEFAULT_QR_DESIGN });
           }
           setBusy(false);
           toast(t.library.csv.imported(rows.length));

@@ -21,11 +21,12 @@ import { deleteQRCode, getQRCode, updateQRCode } from "@/lib/api/qr";
 import { useResource } from "@/lib/hooks/use-resource";
 import { countryName, localizeShareLabel, localizeTimeLabel } from "@/lib/i18n/labels";
 import { useI18n } from "@/lib/i18n/provider";
-import { downloadQRCode } from "@/lib/qr/export";
+import { contentSummary, qrPayload } from "@/lib/qr/types";
 import { formatNumber } from "@/lib/utils/format";
 import type { TimeRange } from "@/types";
 import { DeleteQRModal, ExportQRModal, ShareQRModal } from "./qr-modals";
 import { StyledQR } from "./styled-qr";
+import { Pill } from "@/components/ui/badge";
 
 type ModalName = "share" | "export" | "delete" | null;
 
@@ -44,7 +45,8 @@ export function QRDetail({ id }: { id: string }) {
   const qr = qrRes.data;
   if (!qr) return <DetailSkeleton />;
 
-  const shortUrl = qr.shortUrl;
+  const payload = qrPayload(qr);
+  const dynamic = qr.mode === "dynamic";
   const paused = qr.status !== "active";
 
   const toggleStatus = async () => {
@@ -53,11 +55,6 @@ export function QRDetail({ id }: { id: string }) {
     qrRes.setData(next);
     setUpdating(false);
     toast(next.status === "paused" ? d.paused : d.live, next.status === "paused" ? "warning" : "success");
-  };
-
-  const downloadSvg = async () => {
-    await downloadQRCode({ payload: shortUrl, style: qr.style, name: qr.name, format: "svg" });
-    toast(d.svgDownloaded);
   };
 
   return (
@@ -80,23 +77,36 @@ export function QRDetail({ id }: { id: string }) {
               <StatusBadge status={qr.status} />
             </div>
             <div className="flex min-w-0 items-center gap-1.5">
-              <a href={qr.destinationUrl} target="_blank" rel="noreferrer" className="truncate text-sm text-muted hover:text-fg hover:underline">
-                {qr.destinationUrl}
-              </a>
-              <CopyButton value={qr.destinationUrl} label={d.copyDestination} toastMessage={d.destinationCopied} />
+              {dynamic && qr.destinationUrl ? (
+                <>
+                  <a href={qr.destinationUrl} target="_blank" rel="noreferrer" className="truncate text-sm text-muted hover:text-fg hover:underline">
+                    {qr.destinationUrl}
+                  </a>
+                  <CopyButton value={qr.destinationUrl} label={d.copyDestination} toastMessage={d.destinationCopied} />
+                </>
+              ) : (
+                <>
+                  <Pill className="text-[11px]">
+                    {t.editor.contentTypes[qr.type].label} · {t.library.static}
+                  </Pill>
+                  <span className="truncate text-sm text-muted">{contentSummary(qr.content)}</span>
+                </>
+              )}
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
             <ButtonLink href={`/qr-codes/${qr.id}/edit`} variant="neutral" className="h-[37px] rounded-lg px-4 text-[13px]">
               {t.common.edit}
             </ButtonLink>
-            <Button variant="neutral" className="h-[37px] rounded-lg px-4 text-[13px]" onClick={downloadSvg}>
-              {d.downloadSvg}
+            <Button variant="neutral" className="h-[37px] rounded-lg px-4 text-[13px]" onClick={() => setModal("export")}>
+              {d.download}
             </Button>
-            <Button variant="neutral" className="h-[37px] rounded-lg px-4 text-[13px]" onClick={() => setModal("share")}>
-              {t.common.share}
-            </Button>
-            {qr.status !== "archived" && (
+            {dynamic && (
+              <Button variant="neutral" className="h-[37px] rounded-lg px-4 text-[13px]" onClick={() => setModal("share")}>
+                {t.common.share}
+              </Button>
+            )}
+            {dynamic && qr.status !== "archived" && (
               <Button
                 variant={paused ? "neutral" : "warning"}
                 className="h-[37px] rounded-lg px-4 text-[13px]"
@@ -112,8 +122,11 @@ export function QRDetail({ id }: { id: string }) {
 
       <section aria-label={d.keyMetrics} className="flex flex-col gap-6 md:gap-10 lg:flex-row">
         <Card className="flex flex-col items-center gap-6 bg-bg p-8 md:bg-surface lg:w-[380px] lg:shrink-0">
-          <div className="w-full max-w-[240px] animate-fade-up">
-            <StyledQR value={shortUrl} style={qr.style} title={t.common.qrEncodes(qr.name, shortUrl)} />
+          <div
+            className="w-full max-w-[260px] animate-fade-up overflow-hidden rounded-2xl"
+            style={qr.design.background.transparent ? undefined : { background: qr.design.background.color }}
+          >
+            <StyledQR value={payload} design={qr.design} framed title={t.common.qrEncodes(qr.name, payload)} />
           </div>
           <p className="flex items-center gap-2 text-[13px] font-semibold text-fg-strong">
             <Check className="size-4" aria-hidden /> {d.customStyle}
@@ -124,87 +137,101 @@ export function QRDetail({ id }: { id: string }) {
         <div className="grid grid-cols-4 gap-2 md:hidden">
           <MobileAction icon={<Pencil />} label={t.common.edit} href={`/qr-codes/${qr.id}/edit`} />
           <MobileAction icon={<Download />} label={d.download} onClick={() => setModal("export")} />
-          <MobileAction icon={<Share />} label={t.common.share} onClick={() => setModal("share")} />
-          {qr.status !== "archived" && (
+          {dynamic && <MobileAction icon={<Share />} label={t.common.share} onClick={() => setModal("share")} />}
+          {dynamic && qr.status !== "archived" && (
             <MobileAction icon={paused ? <Play /> : <Pause />} label={paused ? d.resume : d.pause} onClick={toggleStatus} />
           )}
         </div>
 
-        <div className="grid flex-1 grid-cols-2 content-start gap-3 md:gap-4">
-          {stats.data ? (
+        {dynamic ? (
+          <div className="grid flex-1 grid-cols-2 content-start gap-3 md:gap-4">
+            {stats.data ? (
+              <>
+                <StatCard
+                  label={d.totalScans}
+                  value={formatNumber(stats.data.totalScans, locale)}
+                  delta={stats.data.totalScansDelta?.value}
+                  sparkline={stats.data.sparklines.total}
+                />
+                <StatCard
+                  label={d.uniqueVisitors}
+                  value={formatNumber(stats.data.uniqueVisitors, locale)}
+                  delta={stats.data.uniqueVisitorsDelta?.value}
+                  sparkline={stats.data.sparklines.unique}
+                />
+                <StatCard
+                  label={d.countries}
+                  value={stats.data.countryCount}
+                  footnote={
+                    stats.data.countries[0] && stats.data.countries[0].countryCode !== "XX"
+                      ? d.mostly(countryName(stats.data.countries[0].countryCode, stats.data.countries[0].label, locale))
+                      : d.whereFrom
+                  }
+                />
+                <StatCard
+                  label={d.mobileScans}
+                  value={locale === "fr" ? `${stats.data.mobileShare} %` : `${stats.data.mobileShare}%`}
+                  footnote={stats.data.dominantPlatform ? d.dominant(localizeShareLabel(stats.data.dominantPlatform, t)) : d.phoneShare}
+                />
+              </>
+            ) : (
+              Array.from({ length: 4 }, (_, i) => <StatCardSkeleton key={i} />)
+            )}
+          </div>
+        ) : (
+          <Card className="flex flex-1 flex-col gap-3 p-6">
+            <CardTitle>{d.staticTitle}</CardTitle>
+            <p className="text-sm text-muted">{d.staticNotice}</p>
+            <p className="text-xs font-semibold text-subtle uppercase">{d.content}</p>
+            <p className="font-mono text-sm break-all whitespace-pre-wrap text-muted-2">{contentSummary(qr.content)}</p>
+          </Card>
+        )}
+      </section>
+
+      {dynamic && (
+        <>
+
+        <Card className="flex flex-col gap-6 p-5 md:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <CardTitle>
+              <span className="md:hidden">{d.timeline}</span>
+              <span className="hidden md:inline">{d.history}</span>
+            </CardTitle>
+            <RangeChips value={range} onChange={setRange} />
+          </div>
+          {stats.loading ? (
+            <Skeleton className="h-[240px] w-full" />
+          ) : stats.data && stats.data.totalScans > 0 ? (
             <>
-              <StatCard
-                label={d.totalScans}
-                value={formatNumber(stats.data.totalScans, locale)}
-                delta={stats.data.totalScansDelta?.value}
-                sparkline={stats.data.sparklines.total}
-              />
-              <StatCard
-                label={d.uniqueVisitors}
-                value={formatNumber(stats.data.uniqueVisitors, locale)}
-                delta={stats.data.uniqueVisitorsDelta?.value}
-                sparkline={stats.data.sparklines.unique}
-              />
-              <StatCard
-                label={d.countries}
-                value={stats.data.countryCount}
-                footnote={
-                  stats.data.countries[0] && stats.data.countries[0].countryCode !== "XX"
-                    ? d.mostly(countryName(stats.data.countries[0].countryCode, stats.data.countries[0].label, locale))
-                    : d.whereFrom
-                }
-              />
-              <StatCard
-                label={d.mobileScans}
-                value={locale === "fr" ? `${stats.data.mobileShare} %` : `${stats.data.mobileShare}%`}
-                footnote={stats.data.dominantPlatform ? d.dominant(localizeShareLabel(stats.data.dominantPlatform, t)) : d.phoneShare}
-              />
+              <ScansLineChart data={stats.data.timeseries} label={d.chartLabel(qr.name)} />
+              {stats.data.peak && (
+                <p className="flex w-fit items-center gap-2 rounded-lg border border-line bg-bg p-3 text-[13px] text-muted-2">
+                  <span className="size-2 rounded-full bg-fg-strong" aria-hidden />
+                  <span>
+                    {d.peak} <b className="font-bold text-fg-strong">{localizeTimeLabel(stats.data.peak.label, locale)}</b> ·{" "}
+                    {t.common.scans(stats.data.peak.scans, formatNumber(stats.data.peak.scans, locale))}
+                  </span>
+                </p>
+              )}
             </>
           ) : (
-            Array.from({ length: 4 }, (_, i) => <StatCardSkeleton key={i} />)
+            <p className="py-16 text-center text-sm text-muted">{d.noScans}</p>
           )}
-        </div>
-      </section>
+        </Card>
 
-      <Card className="flex flex-col gap-6 p-5 md:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <CardTitle>
-            <span className="md:hidden">{d.timeline}</span>
-            <span className="hidden md:inline">{d.history}</span>
-          </CardTitle>
-          <RangeChips value={range} onChange={setRange} />
-        </div>
-        {stats.loading ? (
-          <Skeleton className="h-[240px] w-full" />
-        ) : stats.data && stats.data.totalScans > 0 ? (
-          <>
-            <ScansLineChart data={stats.data.timeseries} label={d.chartLabel(qr.name)} />
-            {stats.data.peak && (
-              <p className="flex w-fit items-center gap-2 rounded-lg border border-line bg-bg p-3 text-[13px] text-muted-2">
-                <span className="size-2 rounded-full bg-fg-strong" aria-hidden />
-                <span>
-                  {d.peak} <b className="font-bold text-fg-strong">{localizeTimeLabel(stats.data.peak.label, locale)}</b> ·{" "}
-                  {t.common.scans(stats.data.peak.scans, formatNumber(stats.data.peak.scans, locale))}
-                </span>
-              </p>
-            )}
-          </>
-        ) : (
-          <p className="py-16 text-center text-sm text-muted">{d.noScans}</p>
+        {stats.data && stats.data.countries.length > 0 && (
+          <section className="flex flex-col gap-4 md:hidden">
+            <h2 className="font-display text-lg font-extrabold text-fg">{d.topLocations}</h2>
+            <ShareBars items={stats.data.countries} />
+          </section>
         )}
-      </Card>
 
-      {stats.data && stats.data.countries.length > 0 && (
-        <section className="flex flex-col gap-4 md:hidden">
-          <h2 className="font-display text-lg font-extrabold text-fg">{d.topLocations}</h2>
-          <ShareBars items={stats.data.countries} />
+        <section className="flex flex-col gap-4">
+          <h2 className="font-display text-xl font-extrabold text-fg">{d.recent}</h2>
+          {stats.data ? <ScansTable scans={stats.data.recentScans} /> : <Skeleton className="h-[240px] w-full rounded-2xl" />}
         </section>
+        </>
       )}
-
-      <section className="flex flex-col gap-4">
-        <h2 className="font-display text-xl font-extrabold text-fg">{d.recent}</h2>
-        {stats.data ? <ScansTable scans={stats.data.recentScans} /> : <Skeleton className="h-[240px] w-full rounded-2xl" />}
-      </section>
 
       <div className="flex justify-end">
         <Button variant="ghost-danger" size="sm" leadingIcon={<Trash2 className="size-4" />} onClick={() => setModal("delete")}>

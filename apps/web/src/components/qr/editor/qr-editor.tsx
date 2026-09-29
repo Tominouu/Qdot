@@ -3,7 +3,7 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -13,7 +13,8 @@ import { clearSession, getSession } from "@/lib/auth/session";
 import { errorMessage } from "@/lib/i18n/errors";
 import { useI18n } from "@/lib/i18n/provider";
 import { savePendingQR } from "@/lib/onboarding/pending-qr";
-import { DestinationPanel, StylePanels, TypePanel } from "./editor-panels";
+import { ContentPanel } from "./content-panel";
+import { DesignPanel } from "./design-panel";
 import { QRPreviewCard } from "./qr-preview-card";
 import { useQRDraft, type QRDraft } from "./use-qr-draft";
 
@@ -29,32 +30,27 @@ export function QREditor({ initial, existingId }: QREditorProps) {
   const { t } = useI18n();
   const e = t.editor;
   const ctrl = useQRDraft(initial);
-  const { draft, destination, inputError, payload, payloadIsFinal, scannability } = ctrl;
+  const { draft, content, mode, valid, errors, destination, payload, payloadIsFinal, report } = ctrl;
   const [phoneMockup, setPhoneMockup] = useState(false);
   const [pending, setPending] = useState<"create" | "draft" | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const editing = Boolean(existingId);
 
-  const baseInput = () => ({
-    name: draft.name,
-    category: draft.category,
-    campaignId: draft.campaignId,
-    style: draft.style,
-  });
+  const fields = () => ({ name: draft.name, category: draft.category, campaignId: draft.campaignId, content, design: draft.design });
 
   /** No account yet (onboarding) or session expired: keep everything and go to the Account step. */
-  const continueToAccount = (destinationUrl: string, status: "active" | "draft") => {
+  const continueToAccount = (status: "active" | "draft") => {
     savePendingQR({
       draft: {
         previewCode: draft.previewCode,
         name: draft.name,
-        type: draft.type,
         category: draft.category,
         campaignId: draft.campaignId,
-        input: draft.input,
-        style: draft.style,
+        mode,
+        type: draft.type,
+        contents: draft.contents,
+        design: draft.design,
       },
-      create: { ...baseInput(), type: "url", destinationUrl, status },
+      create: { ...fields(), mode, status },
     });
     router.push("/onboarding/account");
   };
@@ -64,28 +60,31 @@ export function QREditor({ initial, existingId }: QREditorProps) {
     setPending(null);
   };
 
+  /** First invalid field of the content form gets focus, like a native form. */
+  const focusFirstError = () => {
+    const first = Object.values(errors)[0];
+    toast(first ?? e.addDestination, "warning");
+    requestAnimationFrame(() => document.querySelector<HTMLElement>('[aria-label="' + e.sections.content + '"] [aria-invalid="true"]')?.focus());
+  };
+
   const submit = async () => {
     ctrl.touch();
-    if (inputError || !destination) {
-      toast(inputError ?? e.addDestination, "warning");
-      inputRef.current?.focus();
-      return;
-    }
-    if (!editing && !getSession()) return continueToAccount(destination, "active");
+    if (!valid) return focusFirstError();
+    if (!editing && !getSession()) return continueToAccount("active");
     setPending("create");
     try {
       if (existingId) {
-        await updateQRCode(existingId, { ...baseInput(), destinationUrl: destination });
-        toast(e.changesSaved, "info");
+        await updateQRCode(existingId, fields());
+        toast(mode === "dynamic" ? e.changesSavedDynamic : e.changesSaved, "info");
         router.push(`/qr-codes/${existingId}`);
       } else {
-        const qr = await createQRCode({ ...baseInput(), type: "url", destinationUrl: destination, status: "active" });
+        const qr = await createQRCode({ ...fields(), mode, status: "active" });
         router.push(`/qr-codes/${qr.id}/success`);
       }
     } catch (err) {
       if (isUnauthenticated(err)) {
         clearSession();
-        if (!editing) return continueToAccount(destination, "active");
+        if (!editing) return continueToAccount("active");
         router.push(`/sign-in?next=${encodeURIComponent(`/qr-codes/${existingId}/edit`)}`);
         return;
       }
@@ -94,22 +93,21 @@ export function QREditor({ initial, existingId }: QREditorProps) {
   };
 
   const saveDraft = async () => {
-    if (!destination) {
-      ctrl.touch();
+    ctrl.touch();
+    if (!valid) {
       toast(e.addValidDestination, "warning");
-      inputRef.current?.focus();
       return;
     }
-    if (!getSession()) return continueToAccount(destination, "draft");
+    if (!getSession()) return continueToAccount("draft");
     setPending("draft");
     try {
-      await createQRCode({ ...baseInput(), type: "url", destinationUrl: destination, status: "draft" });
+      await createQRCode({ ...fields(), mode, status: "draft" });
       toast(e.draftSaved, "info");
       router.push("/qr-codes");
     } catch (err) {
       if (isUnauthenticated(err)) {
         clearSession();
-        return continueToAccount(destination, "draft");
+        return continueToAccount("draft");
       }
       fail(err, e.couldNotSaveDraft);
     }
@@ -159,10 +157,9 @@ export function QREditor({ initial, existingId }: QREditorProps) {
         )}
       </header>
 
-      <div className="grid flex-1 lg:grid-cols-[280px_minmax(0,1fr)_280px]">
-        <aside className="order-2 border-line bg-bg md:grid md:grid-cols-2 md:border-t lg:order-1 lg:block lg:self-start lg:border-t-0 lg:border-r lg:bg-[#18181b]">
-          <DestinationPanel ctrl={ctrl} inputRef={inputRef} />
-          <TypePanel ctrl={ctrl} />
+      <div className="grid flex-1 lg:grid-cols-[300px_minmax(0,1fr)_320px]">
+        <aside className="order-2 border-line bg-bg md:border-t lg:order-1 lg:self-start lg:border-t-0 lg:border-r lg:bg-[#18181b]">
+          <ContentPanel ctrl={ctrl} />
         </aside>
 
         <section
@@ -174,8 +171,9 @@ export function QREditor({ initial, existingId }: QREditorProps) {
               compact
               payload={payload}
               payloadIsFinal={payloadIsFinal}
-              style={draft.style}
-              scannability={scannability}
+              mode={mode}
+              design={draft.design}
+              report={report}
               destination={destination}
               phoneMockup={false}
               onPhoneMockupChange={setPhoneMockup}
@@ -185,8 +183,9 @@ export function QREditor({ initial, existingId }: QREditorProps) {
             <QRPreviewCard
               payload={payload}
               payloadIsFinal={payloadIsFinal}
-              style={draft.style}
-              scannability={scannability}
+              mode={mode}
+              design={draft.design}
+              report={report}
               destination={destination}
               phoneMockup={phoneMockup}
               onPhoneMockupChange={setPhoneMockup}
@@ -194,8 +193,8 @@ export function QREditor({ initial, existingId }: QREditorProps) {
           </div>
         </section>
 
-        <aside className="order-3 border-line bg-bg pb-28 md:grid md:grid-cols-2 md:pb-0 lg:block lg:self-start lg:border-l lg:bg-[#18181b]">
-          <StylePanels ctrl={ctrl} />
+        <aside className="order-3 border-line bg-bg pb-28 md:border-t md:pb-0 lg:self-start lg:border-t-0 lg:border-l lg:bg-[#18181b]">
+          <DesignPanel ctrl={ctrl} />
         </aside>
       </div>
 

@@ -9,7 +9,7 @@ import type { PendingQRCode } from "@/types";
  * survives navigation between Account, Sign in, Forgot password and back to
  * the editor (and reloads) within the tab.
  */
-const store = createStorageStore<PendingQRCode>("session", "qdot.onboarding.pending-qr.v1");
+const store = createStorageStore<PendingQRCode>("session", "qdot.onboarding.pending-qr.v2");
 
 export const savePendingQR = (value: Omit<PendingQRCode, "savedAt">) => store.set({ ...value, savedAt: new Date().toISOString() });
 export const clearPendingQR = store.clear;

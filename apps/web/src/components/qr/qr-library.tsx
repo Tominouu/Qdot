@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/field";
 import { Segmented } from "@/components/ui/segmented";
 import { listQRCodes } from "@/lib/api/qr";
 import { useResource } from "@/lib/hooks/use-resource";
+import { contentSummary } from "@/lib/qr/types";
 import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils/cn";
 import type { QRStatus } from "@/types";
@@ -41,7 +42,7 @@ export function QRLibrary() {
     const q = query.trim().toLowerCase();
     return (codes ?? [])
       .filter((c) => filter === "all" || c.status === filter)
-      .filter((c) => !q || c.name.toLowerCase().includes(q) || c.destinationUrl.toLowerCase().includes(q));
+      .filter((c) => !q || c.name.toLowerCase().includes(q) || contentSummary(c.content).toLowerCase().includes(q));
   }, [codes, filter, query]);
 
   if (!loading && codes && codes.length === 0) {

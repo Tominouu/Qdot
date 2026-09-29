@@ -3,10 +3,11 @@
 import { useMemo, useReducer } from "react";
 import { previewShortUrl } from "@/lib/config";
 import { useI18n } from "@/lib/i18n/provider";
-import { contentTypeConfig } from "@/lib/qr/content-types";
-import { DEFAULT_QR_STYLE } from "@/lib/qr/presets";
-import { checkScannability } from "@/lib/qr/scannability";
-import type { PendingQRCode, QRCategory, QRCode, QRContentType, QRStyle } from "@/types";
+import { DEFAULT_QR_DESIGN } from "@/lib/qr/presets";
+import { buildQRGeometry } from "@/lib/qr/render/geometry";
+import { analyzeDesign } from "@/lib/qr/scannability";
+import { contentPayload, defaultContent, QR_TYPES, validateContent } from "@/lib/qr/types";
+import type { PendingQRCode, QRCategory, QRCode, QRContent, QRContentType, QRDesign, QRMode } from "@/types";
 
 export interface QRDraft {
   /** Placeholder code for new codes; the API assigns the real one on save. */
@@ -14,27 +15,43 @@ export interface QRDraft {
   /** Real redirect URL when editing a saved code (never changes). */
   shortUrl: string | null;
   name: string;
-  type: QRContentType;
   category: QRCategory;
   campaignId: string | null;
-  /** Raw value of the primary field (URL, email, phone…). */
-  input: string;
-  style: QRStyle;
+  mode: QRMode;
+  /** True when editing: the mode is fixed once a code exists. */
+  modeLocked: boolean;
+  type: QRContentType;
+  contents: Partial<Record<QRContentType, QRContent>>;
+  design: QRDesign;
   /** Show validation errors only after the user interacted or tried to submit. */
   touched: boolean;
 }
 
 type Action =
-  | { type: "set"; patch: Partial<Omit<QRDraft, "style">> }
-  | { type: "style"; patch: Partial<QRStyle> }
+  | { type: "set"; patch: Partial<Pick<QRDraft, "name" | "category" | "campaignId" | "mode" | "touched">> }
+  | { type: "contentType"; value: QRContentType }
+  | { type: "content"; value: QRContent }
+  | { type: "design"; update: (d: QRDesign) => QRDesign }
   | { type: "touch" };
 
 function reducer(state: QRDraft, action: Action): QRDraft {
   switch (action.type) {
     case "set":
       return { ...state, ...action.patch };
-    case "style":
-      return { ...state, style: { ...state.style, ...action.patch } };
+    case "contentType": {
+      const dynamicOk = QR_TYPES[action.value].dynamic;
+      return {
+        ...state,
+        type: action.value,
+        // Static-only types force static; switching back to URL restores dynamic for new codes.
+        mode: state.modeLocked ? state.mode : dynamicOk ? (state.type === action.value ? state.mode : "dynamic") : "static",
+        touched: false,
+      };
+    }
+    case "content":
+      return { ...state, contents: { ...state.contents, [action.value.type]: action.value } };
+    case "design":
+      return { ...state, design: action.update(state.design) };
     case "touch":
       return { ...state, touched: true };
   }
@@ -48,18 +65,20 @@ export function initialDraft(opts: {
   /** Draft saved before the onboarding Account step. */
   pending?: PendingQRCode["draft"];
 }): QRDraft {
-  const { existing } = opts;
-  if (opts.pending) return { ...opts.pending, shortUrl: null, touched: false };
+  const { existing, pending } = opts;
+  if (pending) return { ...pending, shortUrl: null, modeLocked: false, touched: false };
   if (existing) {
     return {
       previewCode: existing.code,
       shortUrl: existing.shortUrl,
       name: existing.name,
-      type: existing.type,
       category: existing.category,
       campaignId: existing.campaignId,
-      input: contentTypeConfig(existing.type).fromDestination(existing.destinationUrl),
-      style: existing.style,
+      mode: existing.mode,
+      modeLocked: true,
+      type: existing.type,
+      contents: { [existing.type]: existing.content },
+      design: existing.design,
       touched: false,
     };
   }
@@ -67,11 +86,13 @@ export function initialDraft(opts: {
     previewCode: opts.previewCode,
     shortUrl: null,
     name: "",
-    type: "url",
     category: opts.category ?? "website",
     campaignId: opts.campaignId ?? null,
-    input: "",
-    style: DEFAULT_QR_STYLE,
+    mode: "dynamic",
+    modeLocked: false,
+    type: "url",
+    contents: {},
+    design: structuredClone(DEFAULT_QR_DESIGN),
     touched: false,
   };
 }
@@ -79,27 +100,39 @@ export function initialDraft(opts: {
 /** All editor state + derived values. UI components stay presentational. */
 export function useQRDraft(initial: QRDraft) {
   const [draft, dispatch] = useReducer(reducer, initial);
-  const config = contentTypeConfig(draft.type);
   const { t } = useI18n();
+  const content = draft.contents[draft.type] ?? defaultContent(draft.type);
+  const dynamicCapable = QR_TYPES[draft.type].dynamic;
+  const mode: QRMode = dynamicCapable ? draft.mode : "static";
 
   const derived = useMemo(() => {
-    const inputError = config.validate(draft.input, t);
+    const errors = validateContent(content, t);
+    const valid = Object.keys(errors).length === 0;
+    const payload = mode === "dynamic" ? (draft.shortUrl ?? previewShortUrl(draft.previewCode)) : contentPayload(content);
+    const geometry = buildQRGeometry(payload, draft.design);
     return {
-      payload: draft.shortUrl ?? previewShortUrl(draft.previewCode),
-      /** False until the API has assigned the code (new QR codes). */
-      payloadIsFinal: draft.shortUrl !== null,
-      destination: inputError ? null : config.toDestination(draft.input),
-      inputError,
-      scannability: checkScannability(draft.style),
+      errors,
+      valid,
+      payload,
+      /** False until the API has assigned the code (new dynamic codes). */
+      payloadIsFinal: mode === "static" || draft.shortUrl !== null,
+      /** Where a dynamic code redirects, once the content is valid. */
+      destination: mode === "dynamic" && valid && content.type === "url" ? content.url.trim() : null,
+      report: analyzeDesign(draft.design, geometry),
+      geometry,
     };
-  }, [config, t, draft.input, draft.previewCode, draft.shortUrl, draft.style]);
+  }, [content, mode, t, draft.design, draft.previewCode, draft.shortUrl]);
 
   return {
     draft,
-    config,
+    content,
+    mode,
+    dynamicCapable,
     ...derived,
-    set: (patch: Partial<Omit<QRDraft, "style">>) => dispatch({ type: "set", patch }),
-    setStyle: (patch: Partial<QRStyle>) => dispatch({ type: "style", patch }),
+    set: (patch: Extract<Action, { type: "set" }>["patch"]) => dispatch({ type: "set", patch }),
+    setType: (value: QRContentType) => dispatch({ type: "contentType", value }),
+    setContent: (value: QRContent) => dispatch({ type: "content", value }),
+    updateDesign: (update: (d: QRDesign) => QRDesign) => dispatch({ type: "design", update }),
     touch: () => dispatch({ type: "touch" }),
   };
 }

@@ -5,11 +5,16 @@ import { StyledQR } from "@/components/qr/styled-qr";
 import { ButtonLink } from "@/components/ui/button";
 import { REPO_LABEL, REPO_URL } from "@/lib/config";
 import { getDictionary, getLocale } from "@/lib/i18n/server";
-import { DEFAULT_QR_STYLE, SHOWCASE_PRESETS } from "@/lib/qr/presets";
+import { DEFAULT_QR_DESIGN, SHOWCASE_PRESETS, withDesign } from "@/lib/qr/presets";
 import { cn } from "@/lib/utils/cn";
 import { formatNumber } from "@/lib/utils/format";
 
 const DEMO_URL = "https://qr.example.com/qdot";
+
+const CLASSIC_DESIGN = withDesign((d) => {
+  d.modules = { ...d.modules, shape: "square", textured: false };
+  d.eyes = { ...d.eyes, outer: "square", inner: "square", center: "square" };
+});
 
 function Section({ id, className, children }: { id?: string; className?: string; children: ReactNode }) {
   return (
@@ -66,7 +71,7 @@ export async function HeroSection() {
               aria-hidden
             />
             <div className="absolute top-1/2 left-1/2 w-[180px] -translate-x-1/2 -translate-y-1/2 animate-pop sm:w-[200px]">
-              <StyledQR value={DEMO_URL} style={DEFAULT_QR_STYLE} title={hero.qrTitle} />
+              <StyledQR value={DEMO_URL} design={DEFAULT_QR_DESIGN} title={hero.qrTitle} />
             </div>
             <FloatingStat label={hero.liveScans} icon={ChartBar} className="top-[30px] left-0 animate-fade-up [animation-delay:200ms] sm:top-10 sm:left-5">
               <span className="font-display text-xl font-bold text-[#fafafa]">1,284</span>
@@ -92,7 +97,7 @@ export async function DynamicSection() {
       <div className="flex flex-col items-center gap-12 lg:flex-row lg:gap-20">
         <div className="flex flex-1 flex-col items-center gap-6 sm:flex-row sm:gap-4" aria-hidden>
           <div className="w-[140px] shrink-0 sm:w-40">
-            <StyledQR value={`${DEMO_URL}/release`} style={{ ...DEFAULT_QR_STYLE, textured: false, eyeShape: "classic", pattern: "squares" }} />
+            <StyledQR value={`${DEMO_URL}/release`} design={CLASSIC_DESIGN} />
           </div>
           <div className="flex shrink-0 flex-col items-center gap-2 text-[10px] font-medium text-faint uppercase sm:w-[60px]">
             <span className="h-8 w-px bg-muted-2 sm:h-px sm:w-[60px]" />
@@ -132,7 +137,7 @@ export async function CustomizationSection() {
               className="flex w-[calc(50%-8px)] max-w-[188px] flex-col items-center gap-6 rounded-2xl border border-line bg-surface p-6 transition-[transform,border-color] duration-200 hover:-translate-y-1 hover:border-line-strong sm:w-[188px]"
             >
               <div className="w-full max-w-[140px]">
-                <StyledQR value={`${DEMO_URL}/${p.name.toLowerCase().replace(/\s+/g, "-")}`} style={p.style} title={customization.example(p.name)} />
+                <StyledQR value={`${DEMO_URL}/${p.name.toLowerCase().replace(/\s+/g, "-")}`} design={p.design} title={customization.example(p.name)} />
               </div>
               <p className="text-[13px] font-semibold text-fg">{p.name}</p>
             </li>

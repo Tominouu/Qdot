@@ -105,7 +105,9 @@ export const legalFr: LegalDocs = {
         body: [
           {
             list: [
-              "Données : adresse e-mail, nom, mot de passe (conservé uniquement sous forme d'empreinte Argon2id, jamais en clair), date de création du compte, QR codes et campagnes que vous créez (noms, adresses de destination, styles, logos).",
+              "Données : adresse e-mail, nom, mot de passe (conservé uniquement sous forme d'empreinte Argon2id, jamais en clair), date de création du compte, QR codes et campagnes que vous créez (noms, contenus encodés, styles, logos et images).",
+              "Contenu des QR codes : selon le type choisi, adresse web, coordonnées d'une carte de visite (vCard), adresse e-mail, objet et message, numéro de téléphone et message SMS, ou nom et mot de passe d'un réseau Wi-Fi. Ces informations sont celles que vous saisissez ; si elles concernent d'autres personnes (par exemple une carte de visite), il vous appartient de disposer de leur accord.",
+              "Mots de passe Wi-Fi : ils sont conservés pour que vous puissiez rouvrir, modifier et réexporter le QR code. Ils sont chiffrés au repos (AES-256-GCM) avec une clé propre au serveur, ne figurent jamais dans les journaux techniques, ne sont jamais renvoyés dans les listes de QR codes et ne sont déchiffrés que lorsque vous consultez ou modifiez le QR code concerné. Ils sont supprimés avec le QR code ou le compte.",
               "Finalités : créer et sécuriser votre compte, fournir le service (création, modification et redirection des QR codes, statistiques), vous contacter au sujet du service.",
               "Base légale : exécution du contrat qui nous lie, c'est-à-dire les conditions générales d'utilisation (article 6.1.b du RGPD).",
               "Durée de conservation : pendant toute la vie du compte. La suppression du compte entraîne la suppression de ses QR codes, campagnes et statistiques. Les sessions de connexion expirent automatiquement après 30 jours.",
@@ -153,7 +155,7 @@ export const legalFr: LegalDocs = {
         id: "securite",
         heading: "Sécurité",
         body: [
-          "Les échanges sont chiffrés (HTTPS), les mots de passe sont hachés avec Argon2id, le cookie de session est inaccessible aux scripts (HttpOnly) et seule une empreinte du jeton de session est conservée en base.",
+          "Les échanges sont chiffrés (HTTPS), les mots de passe de compte sont hachés avec Argon2id, les mots de passe Wi-Fi sont chiffrés en AES-256-GCM, le cookie de session est inaccessible aux scripts (HttpOnly) et seule une empreinte du jeton de session est conservée en base.",
         ],
       },
       {

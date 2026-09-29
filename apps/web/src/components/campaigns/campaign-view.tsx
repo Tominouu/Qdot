@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ChannelsLineChart } from "@/components/analytics/channels-line-chart";
 import { StatCard, StatCardSkeleton } from "@/components/analytics/stat-card";
-import { StyledQR } from "@/components/qr/styled-qr";
+import { QRThumbnail } from "@/components/qr/styled-qr";
 import { Pill } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Card, CardTitle, SectionHeading } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCampaign, getCampaignAnalytics } from "@/lib/api/campaigns";
 import { useResource } from "@/lib/hooks/use-resource";
+import { qrPayload } from "@/lib/qr/types";
 import { countryName } from "@/lib/i18n/labels";
 import { useI18n } from "@/lib/i18n/provider";
 import { formatDate, formatNumber } from "@/lib/utils/format";
@@ -32,7 +33,7 @@ function CampaignQRCard({ qr }: { qr: QRCode }) {
     >
       <Card className="flex h-full flex-col gap-7 p-6 transition-colors group-hover:border-line-strong">
         <div className="flex items-center justify-between">
-          <StyledQR value={qr.shortUrl} style={qr.style} size={48} title={t.common.qrCodeOf(qr.name)} />
+          <QRThumbnail value={qrPayload(qr)} design={qr.design} size={48} title={t.common.qrCodeOf(qr.name)} />
           <Pill className="text-[13px]">{t.status[qr.status]}</Pill>
         </div>
         <div className="flex flex-col gap-1">

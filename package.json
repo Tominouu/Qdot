@@ -10,7 +10,7 @@
     "db:embedded": "pnpm --filter @qdot/api db:embedded",
     "geoip:download": "pnpm --filter @qdot/api geoip:download",
     "build": "pnpm --filter @qdot/api build && pnpm --filter web build",
-    "test": "pnpm --filter @qdot/api test",
+    "test": "pnpm --filter @qdot/api --filter web test",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm --filter web lint"
   },

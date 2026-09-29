@@ -1,5 +1,38 @@
-import { DEFAULT_QR_STYLE } from "@/lib/qr/presets";
-import type { QRCode } from "@/types";
+import { DEFAULT_QR_DESIGN, normalizeDesign, type QRCode, type QRStyle } from "@/types";
+
+/** The original Qdot style in the legacy (v1) format these fixtures were written in. */
+const DEFAULT_QR_STYLE: QRStyle = {
+  pattern: "rounded",
+  eyeShape: "rounded",
+  foreground: "#FAFAFA",
+  background: "#27272A",
+  eyeColor: "#E8503A",
+  textured: true,
+  logo: null,
+};
+
+/** A code as stored before the designer: v1 `style`, no content/mode. */
+type LegacyMockQR = Omit<QRCode, "design" | "mode" | "content" | "contentRedacted" | "destinationUrl"> & { destinationUrl: string; style: QRStyle };
+
+/**
+ * Brings any stored mock code (v1 fixtures, localStorage from older versions,
+ * or current ones) to the current shape — same rules as the API.
+ */
+export function upgradeMockQR(stored: QRCode | LegacyMockQR): QRCode {
+  const raw = stored as Partial<QRCode> & { style?: QRStyle; destinationUrl?: string | null };
+  const { style, ...rest } = raw;
+  const mode = raw.mode ?? "dynamic";
+  const content = raw.content ?? { type: "url" as const, url: raw.destinationUrl ?? "" };
+  return {
+    ...(rest as QRCode),
+    type: content.type,
+    mode,
+    content,
+    contentRedacted: false,
+    destinationUrl: mode === "dynamic" && content.type === "url" ? content.url : null,
+    design: normalizeDesign(raw.design ?? style ?? DEFAULT_QR_DESIGN),
+  };
+}
 
 /** Short URL for mock codes (the real API builds it from QR_REDIRECT_BASE_URL). */
 export function mockShortUrl(code: string): string {
@@ -8,7 +41,7 @@ export function mockShortUrl(code: string): string {
 
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
 
-export const QR_CODES: QRCode[] = [
+const LEGACY_FIXTURES: LegacyMockQR[] = [
   {
     id: "qr_summer_menu",
     code: "sm26x9",
@@ -146,3 +179,32 @@ export const QR_CODES: QRCode[] = [
     updatedAt: "2026-07-01T09:30:00.000Z",
   },
 ];
+
+const STATIC_FIXTURES: QRCode[] = [
+  {
+    id: "qr_guest_wifi",
+    code: "gw7k3p",
+    shortUrl: mockShortUrl("gw7k3p"),
+    name: "Guest Wi-Fi",
+    type: "wifi",
+    mode: "static",
+    category: "custom",
+    content: { type: "wifi", ssid: "Bistro-Guests", security: "WPA", password: "welcome2026", hidden: false },
+    contentRedacted: false,
+    destinationUrl: null,
+    status: "active",
+    design: {
+      ...DEFAULT_QR_DESIGN,
+      modules: { shape: "extra-rounded", textured: false, fill: { type: "solid", color: "#FAFAFA" } },
+      eyes: { ...DEFAULT_QR_DESIGN.eyes, outer: "circle", inner: "circle", center: "circle" },
+    },
+    campaignId: null,
+    totalScans: 0,
+    uniqueScans: 0,
+    lastScanAt: null,
+    createdAt: "2026-09-20T10:00:00.000Z",
+    updatedAt: "2026-09-20T10:00:00.000Z",
+  },
+];
+
+export const QR_CODES: QRCode[] = [...LEGACY_FIXTURES.map(upgradeMockQR), ...STATIC_FIXTURES];

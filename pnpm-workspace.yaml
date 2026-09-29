@@ -7,3 +7,4 @@ allowBuilds:
   unrs-resolver: true
   esbuild: true
   argon2: true
+  core-js: false

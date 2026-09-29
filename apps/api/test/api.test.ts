@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
-import type { QRCode, QRCodeAnalytics } from "@qdot/types";
+import { legacyStyleToDesign, type QRCode, type QRCodeAnalytics } from "@qdot/types";
 import { client, STYLE, startTestApi, UA } from "./helpers";
 
 let api: Awaited<ReturnType<typeof startTestApi>>;
@@ -122,7 +122,10 @@ describe("QR codes, redirect, tracking, analytics", () => {
     assert.match(qr.code, /^[a-z2-9]{8}$/);
     assert.notEqual(qr.code, qr.id);
     assert.equal(qr.shortUrl, `https://qr.qdot.test/r/${qr.code}`);
-    assert.deepEqual(qr.style, STYLE);
+    assert.deepEqual(qr.design, legacyStyleToDesign(STYLE), "v1 style input is upgraded to the v2 design");
+    assert.equal(qr.mode, "dynamic");
+    assert.equal(qr.type, "url");
+    assert.deepEqual(qr.content, { type: "url", url: "https://bistro.example/menu" });
     assert.equal(qr.status, "active");
 
     const list = (await alice.get("/qr")).json() as QRCode[];
@@ -132,7 +135,8 @@ describe("QR codes, redirect, tracking, analytics", () => {
     const patched = await alice.patch(`/qr/${qr.id}`, { destinationUrl: "https://bistro.example/menu-v2", style: { ...STYLE, pattern: "dots" } });
     assert.equal(patched.statusCode, 200);
     assert.equal(patched.json().destinationUrl, "https://bistro.example/menu-v2");
-    assert.equal(patched.json().style.pattern, "dots");
+    assert.equal(patched.json().design.modules.shape, "circle");
+    assert.equal(patched.json().content.url, "https://bistro.example/menu-v2");
     assert.equal(patched.json().code, qr.code, "code never changes");
   });
 

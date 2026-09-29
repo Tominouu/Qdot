@@ -12,6 +12,7 @@ import { campaignRoutes } from "./routes/campaigns";
 import { qrRoutes } from "./routes/qr-codes";
 import { redirectRoutes } from "./routes/redirect";
 import type { GeoResolver } from "./services/geoip";
+import { createSecretBox } from "./services/secrets";
 
 export interface AppDeps {
   env: Env;
@@ -26,8 +27,8 @@ export async function buildApp({ env, db, geo, logger = true }: AppDeps) {
   const app = Fastify({
     logger,
     trustProxy: env.TRUST_PROXY,
-    // Logos are stored as data URLs inside the QR configuration (≤ 1 MB).
-    bodyLimit: 2 * 1024 * 1024,
+    // Logo and background images are stored as data URLs inside the design (≤ 1 MB each).
+    bodyLimit: 4 * 1024 * 1024,
   });
 
   registerErrorHandling(app);
@@ -58,7 +59,7 @@ export async function buildApp({ env, db, geo, logger = true }: AppDeps) {
   await app.register(healthRoutes, { db });
   await app.register(redirectRoutes, { db, env, geo });
   await app.register(authRoutes, { db, env });
-  await app.register(qrRoutes, { db, env });
+  await app.register(qrRoutes, { db, env, secrets: createSecretBox(env.DATA_ENCRYPTION_KEY ?? env.SESSION_SECRET) });
   await app.register(campaignRoutes, { db, env });
   await app.register(analyticsRoutes, { db });
 
