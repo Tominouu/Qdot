@@ -128,7 +128,7 @@ export const fr: Dictionary = {
       lead: "Aucun cookie nécessaire. Aucune donnée personnelle stockée. Conforme au RGPD par défaut. Qdot est conçu pour la conformité, afin que chaque interaction renforce la confiance de vos clients.",
     },
     openSource: {
-      stars: "github.com/qdot-hq · 12,8k étoiles",
+      stars: (formatted, n) => `${formatted} ${plural(n, "étoile", "étoiles")}`,
       title: "Développé en open source, pour une souveraineté totale.",
       lead: "Hébergez Qdot sur votre propre infrastructure ou utilisez notre cloud sécurisé. Développé par des ingénieurs convaincus que la protection des données doit être la norme, pas une option payante.",
     },

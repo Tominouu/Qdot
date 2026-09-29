@@ -32,8 +32,13 @@ export const legalFr: LegalDocs = {
       },
       {
         id: "hebergeur",
-        heading: "Hébergeur",
-        body: [{ list: [`Hébergeur : ${E.host.name}`, `Adresse : ${E.host.address}`, `Téléphone : ${E.host.phone}`] }],
+        heading: "Hébergeurs",
+        body: [
+          "Site web (pages et ressources statiques) :",
+          { list: [`Hébergeur : ${E.host.name}`, `Adresse : ${E.host.address}`, `Téléphone : ${E.host.phone}`] },
+          "API, redirection des QR codes et base de données :",
+          { list: [`Hébergeur : ${E.apiHost.name}`, `Adresse : ${E.apiHost.address}`, `Téléphone : ${E.apiHost.phone}`, `Localisation des serveurs : ${E.apiHost.location.fr}`] },
+        ],
       },
       {
         id: "signalement",
@@ -137,8 +142,10 @@ export const legalFr: LegalDocs = {
         id: "destinataires",
         heading: "Destinataires et sous-traitants",
         body: [
-          `Les données sont accessibles uniquement aux personnes habilitées de l'éditeur et à son hébergeur, ${E.host.name}, qui agit en tant que sous-traitant. Elles sont hébergées dans le pays suivant : ${E.host.location}.`,
-          "Aucune donnée n'est transférée hors de l'Union européenne. Si un tel transfert devenait nécessaire, il serait encadré par les garanties prévues aux articles 44 et suivants du RGPD (décision d'adéquation ou clauses contractuelles types).",
+          `Les données de compte et les statistiques de scans sont stockées sur un serveur privé virtuel situé en ${E.apiHost.location.fr}, loué auprès de l'hébergeur ${E.apiHost.name}. Ce serveur est administré exclusivement par l'éditeur : l'hébergeur fournit l'infrastructure matérielle et agit en tant que sous-traitant, sans exploiter les données. Elles ne quittent pas l'Union européenne.`,
+          "Aucune donnée n'est vendue, louée ni cédée à des tiers, ni utilisée à des fins publicitaires.",
+          `Les pages du site sont servies par ${E.host.name} (${E.host.location.fr}), également sous-traitant. Lorsque vous consultez le site, ce prestataire traite uniquement vos données de connexion techniques (adresse IP, pages demandées, navigateur) afin de vous les délivrer et d'assurer la sécurité du service ; il n'a pas accès à votre compte ni aux statistiques de scans, et la redirection des QR codes ne passe pas par lui.`,
+          `Ce traitement implique un transfert de données vers les États-Unis. Il est encadré par les clauses contractuelles types de la Commission européenne intégrées à l'accord de traitement des données de ${E.host.name} et, le cas échéant, par sa certification au cadre de protection des données UE–États-Unis (Data Privacy Framework, décision d'adéquation du 10 juillet 2023). Vous pouvez obtenir une copie de ces garanties en nous écrivant.`,
           "Les données peuvent être communiquées aux autorités lorsque la loi l'exige.",
         ],
       },

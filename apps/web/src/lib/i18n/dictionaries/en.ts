@@ -126,7 +126,7 @@ export const en = {
       lead: "No cookies required. No personal data stored. GDPR compliant by default. Qdot is built with structural compliance so you can build trust with every customer encounter.",
     },
     openSource: {
-      stars: "github.com/qdot-hq · 12.8k Stars",
+      stars: (formatted: string, n: number) => `${formatted} ${plural(n, "Star", "Stars")}`,
       title: "Built in the open, for complete sovereignty.",
       lead: "Self-host on your own infrastructure or use our secure cloud. Under active development by engineers who believe data privacy should be a standard, not a premium feature.",
     },

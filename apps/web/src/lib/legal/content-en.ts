@@ -32,8 +32,13 @@ export const legalEn: LegalDocs = {
       },
       {
         id: "host",
-        heading: "Hosting provider",
-        body: [{ list: [`Host: ${E.host.name}`, `Address: ${E.host.address}`, `Phone: ${E.host.phone}`] }],
+        heading: "Hosting providers",
+        body: [
+          "Website (pages and static assets):",
+          { list: [`Host: ${E.host.name}`, `Address: ${E.host.address}`, `Phone: ${E.host.phone}`] },
+          "API, QR code redirects and database:",
+          { list: [`Host: ${E.apiHost.name}`, `Address: ${E.apiHost.address}`, `Phone: ${E.apiHost.phone}`, `Server location: ${E.apiHost.location.en}`] },
+        ],
       },
       {
         id: "reporting",
@@ -137,8 +142,10 @@ export const legalEn: LegalDocs = {
         id: "recipients",
         heading: "Recipients and processors",
         body: [
-          `Data is accessible only to authorized staff of the publisher and to its hosting provider, ${E.host.name}, acting as a processor. It is hosted in: ${E.host.location}.`,
-          "No data is transferred outside the European Union. Should such a transfer become necessary, it would be covered by the safeguards of GDPR articles 44 et seq. (adequacy decision or standard contractual clauses).",
+          `Account data and scan statistics are stored on a virtual private server located in ${E.apiHost.location.en}, rented from ${E.apiHost.name}. The server is administered solely by the publisher: the host provides the underlying infrastructure and acts as a processor, without using the data. It does not leave the European Union.`,
+          "No data is sold, rented or disclosed to third parties, nor used for advertising.",
+          `The website's pages are served by ${E.host.name} (${E.host.location.en}), also a processor. When you browse the site, this provider only processes your technical connection data (IP address, pages requested, browser) to deliver them and keep the service secure; it has no access to your account or to scan statistics, and QR code redirects do not go through it.`,
+          `This involves a transfer of data to the United States. It is covered by the European Commission's standard contractual clauses included in ${E.host.name}'s data processing agreement and, where applicable, by its certification under the EU–US Data Privacy Framework (adequacy decision of 10 July 2023). You can obtain a copy of these safeguards by writing to us.`,
           "Data may be disclosed to authorities where required by law.",
         ],
       },

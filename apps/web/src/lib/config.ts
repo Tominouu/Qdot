@@ -17,3 +17,7 @@ const PREVIEW_REDIRECT_BASE_URL = (process.env.NEXT_PUBLIC_REDIRECT_BASE_URL || 
 export function previewShortUrl(code: string): string {
   return `${PREVIEW_REDIRECT_BASE_URL}/r/${code}`;
 }
+
+/** Public source repository (landing, header and footer links). */
+export const REPO_URL = "https://github.com/Tominouu/Qdot";
+export const REPO_LABEL = "github.com/Tominouu/Qdot";

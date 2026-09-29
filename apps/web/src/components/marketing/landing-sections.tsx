@@ -3,9 +3,11 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { StyledQR } from "@/components/qr/styled-qr";
 import { ButtonLink } from "@/components/ui/button";
-import { getDictionary } from "@/lib/i18n/server";
+import { REPO_LABEL, REPO_URL } from "@/lib/config";
+import { getDictionary, getLocale } from "@/lib/i18n/server";
 import { DEFAULT_QR_STYLE, SHOWCASE_PRESETS } from "@/lib/qr/presets";
 import { cn } from "@/lib/utils/cn";
+import { formatNumber } from "@/lib/utils/format";
 
 const DEMO_URL = "https://qr.example.com/qdot";
 
@@ -230,17 +232,33 @@ export async function PrivacySection() {
   );
 }
 
+/** Live stargazer count (cached for an hour); null if GitHub is unreachable or rate-limited. */
+async function repoStars(): Promise<number | null> {
+  try {
+    const res = await fetch(REPO_URL.replace("github.com", "api.github.com/repos"), {
+      headers: { Accept: "application/vnd.github+json" },
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return null;
+    const { stargazers_count } = (await res.json()) as { stargazers_count?: number };
+    return typeof stargazers_count === "number" ? stargazers_count : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function OpenSourceSection() {
-  const { openSource } = (await getDictionary()).marketing;
+  const [{ openSource }, locale, stars] = await Promise.all([getDictionary().then((t) => t.marketing), getLocale(), repoStars()]);
   return (
     <Section id="open-source" className="py-16 md:py-[120px]">
       <div className="flex flex-col items-center gap-8 text-center md:gap-10">
         <a
-          href="https://github.com"
+          href={REPO_URL}
           className="flex items-center gap-2.5 rounded-full border border-line bg-surface px-4 py-2 text-[13px] text-fg transition-colors hover:border-line-strong"
         >
           <Image src="/icons/github.svg" alt="" width={16} height={16} />
-          {openSource.stars}
+          {REPO_LABEL}
+          {stars !== null && ` · ${openSource.stars(formatNumber(stars, locale), stars)}`}
         </a>
         <h2 className={cn(h2, "max-w-[800px]")}>{openSource.title}</h2>
         <p className="max-w-[600px] text-base text-muted-2 md:text-lg">{openSource.lead}</p>

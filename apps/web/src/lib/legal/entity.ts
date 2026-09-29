@@ -25,12 +25,20 @@ export const LEGAL_ENTITY = {
   /** Single point of contact for authorities and reports of illegal content (DSA art. 11–12, LCEN). */
   abuseEmail: "tom.leclercq@mmibordeaux.com",
   websiteUrl: "https://app.tom-leclercq.fr/",
+  /** Serves the website pages only (static front end + CDN): sees visitors' connection data, not account or scan data. */
   host: {
-    name: "Netlify",
-    address: "44 Montgomery Street, Suite 300, San Francisco, California 94104",
-    phone: "1-415-691-1573",
-    /** Where servers and backups are located (drives the "transfers outside the EU" section). */
-    location: "United States",
+    name: "Netlify, Inc.",
+    address: "44 Montgomery Street, Suite 300, San Francisco, California 94104, USA",
+    phone: "+1 415 691 1573",
+    location: { fr: "États-Unis", en: "United States" },
+  },
+  /** Runs the API (QR redirects, accounts) and the PostgreSQL database: holds all personal data. */
+  apiHost: {
+    name: "Oracle Cloud Infrastructure (Oracle Corporation)",
+    address: "2300 Oracle Way, Austin, TX 78741, USA",
+    phone: "+1 737 867 1000",
+    /** Where the database and its backups live (drives the "transfers outside the EU" section). */
+    location: { fr: "France (région Paris)", en: "France (Paris region)" },
   },
   /** ISO date shown as "last updated" on every legal page. */
   lastUpdated: "2026-09-29",

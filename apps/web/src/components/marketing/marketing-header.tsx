@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Logo } from "@/components/layout/logo";
 import { ButtonLink } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
+import { REPO_URL } from "@/lib/config";
 import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils/cn";
 
@@ -14,7 +15,7 @@ const NAV = [
   { key: "features", href: "/#features" },
   { key: "pricing", href: "/#open-source" },
   { key: "docs", href: "/#flow" },
-  { key: "github", href: "https://github.com" },
+  { key: "github", href: REPO_URL },
 ] as const;
 
 export function MarketingHeader() {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/layout/logo";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
+import { REPO_URL } from "@/lib/config";
 import { getDictionary } from "@/lib/i18n/server";
 import { LEGAL_DOCS, LEGAL_ENTITY, legalHref } from "@/lib/legal";
 
@@ -9,7 +10,7 @@ export async function MarketingFooter() {
   const f = t.marketing.footer;
   const columns = [
     { title: f.product, links: [[f.features, "/#features"], [f.customization, "/#features"], [f.analytics, "/#flow"]] },
-    { title: f.developers, links: [["GitHub", "https://github.com"], [f.documentation, "/#flow"], [f.selfHosting, "/#open-source"]] },
+    { title: f.developers, links: [["GitHub", REPO_URL], [f.documentation, "/#flow"], [f.selfHosting, "/#open-source"]] },
     { title: f.resources, links: [[f.changelog, "/#open-source"], [f.contact, `mailto:${LEGAL_ENTITY.email}`]] },
     { title: f.legal, links: LEGAL_DOCS.map((d) => [t.legal[d], legalHref(d)]) },
   ];
