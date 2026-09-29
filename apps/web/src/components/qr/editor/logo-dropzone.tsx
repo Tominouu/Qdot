@@ -2,6 +2,7 @@
 
 import { ImageIcon, X } from "lucide-react";
 import { useRef, useState } from "react";
+import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils/cn";
 
 const MAX_BYTES = 1024 * 1024;
@@ -25,11 +26,13 @@ function readAsDataUrl(file: File): Promise<string> {
 export function LogoDropzone({ value, onChange, onError }: LogoDropzoneProps) {
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const { t } = useI18n();
+  const l = t.editor.logo;
 
   const accept = async (file: File | undefined) => {
     if (!file) return;
-    if (!ACCEPT.includes(file.type)) return onError("Logo must be a PNG, JPG, SVG or WebP image");
-    if (file.size > MAX_BYTES) return onError("Logo must be smaller than 1 MB");
+    if (!ACCEPT.includes(file.type)) return onError(l.badType);
+    if (file.size > MAX_BYTES) return onError(l.tooBig);
     onChange(await readAsDataUrl(file));
   };
 
@@ -37,12 +40,12 @@ export function LogoDropzone({ value, onChange, onError }: LogoDropzoneProps) {
     return (
       <div className="flex items-center gap-3 rounded-lg border border-line p-3">
         {/* eslint-disable-next-line @next/next/no-img-element -- user-supplied data URL */}
-        <img src={value} alt="Uploaded logo" className="size-10 rounded-md bg-surface object-contain" />
-        <p className="flex-1 text-xs text-muted">Logo embedded · error correction raised to H</p>
+        <img src={value} alt={l.uploaded} className="size-10 rounded-md bg-surface object-contain" />
+        <p className="flex-1 text-xs text-muted">{l.embedded}</p>
         <button
           type="button"
           onClick={() => onChange(null)}
-          aria-label="Remove logo"
+          aria-label={l.remove}
           className="rounded-md p-1.5 text-muted transition-colors hover:bg-surface-raised hover:text-fg"
         >
           <X className="size-4" />
@@ -72,7 +75,7 @@ export function LogoDropzone({ value, onChange, onError }: LogoDropzoneProps) {
         )}
       >
         <ImageIcon className="size-[18px] text-muted" aria-hidden />
-        <span className="text-xs text-muted">Drop your logo here</span>
+        <span className="text-xs text-muted">{l.drop}</span>
       </button>
       <input
         ref={input}

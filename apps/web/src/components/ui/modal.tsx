@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils/cn";
 
 interface ModalProps {
@@ -16,6 +17,7 @@ interface ModalProps {
 export function Modal({ open, onClose, title, children, className }: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  const { t } = useI18n();
 
   useEffect(() => {
     const dialog = ref.current;
@@ -47,7 +49,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close dialog"
+              aria-label={t.common.closeDialog}
               className="-m-1.5 rounded-md p-1.5 text-muted transition-colors hover:bg-surface-raised hover:text-fg"
             >
               <X className="size-4" />

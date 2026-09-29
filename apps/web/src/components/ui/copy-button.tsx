@@ -2,6 +2,7 @@
 
 import { Check, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils/cn";
 import { useToast } from "./toast";
 
@@ -14,8 +15,9 @@ interface CopyButtonProps {
 }
 
 /** Icon button that copies `value` and flips to a check mark for feedback. */
-export function CopyButton({ value, label = "Copy link", className, iconClassName, toastMessage = "Link copied to clipboard" }: CopyButtonProps) {
+export function CopyButton({ value, label, className, iconClassName, toastMessage }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
+  const { t } = useI18n();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -27,11 +29,11 @@ export function CopyButton({ value, label = "Copy link", className, iconClassNam
   return (
     <button
       type="button"
-      aria-label={copied ? "Copied" : label}
+      aria-label={copied ? t.common.copied : (label ?? t.common.copyLink)}
       onClick={async () => {
         await copyText(value);
         setCopied(true);
-        toast(toastMessage, "info");
+        toast(toastMessage ?? t.common.linkCopied, "info");
       }}
       className={cn("inline-flex rounded-md p-1 text-muted transition-colors hover:bg-surface-raised hover:text-fg", className)}
     >

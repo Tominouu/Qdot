@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useToast } from "@/components/ui/toast";
+import { errorMessage } from "@/lib/i18n/errors";
+import { useI18n } from "@/lib/i18n/provider";
 import { setSession } from "@/lib/auth/session";
 import { completeOnboarding } from "@/lib/onboarding/pending-qr";
 import type { AuthSession } from "@/types";
@@ -22,6 +24,7 @@ function nextPath(): string {
 export function useAuthFlow(successMessage: string) {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useI18n();
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,7 +38,7 @@ export function useAuthFlow(successMessage: string) {
       router.push(next);
       // Keep `busy` until the route changes so buttons can't be re-submitted.
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setError(errorMessage(err, t));
       setBusy(null);
     }
   };

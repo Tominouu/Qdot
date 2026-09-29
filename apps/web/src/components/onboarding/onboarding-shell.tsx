@@ -1,13 +1,16 @@
+"use client";
+
 import { Fragment, type ReactNode } from "react";
 import { Logo } from "@/components/layout/logo";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
+import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils/cn";
-
-export const ONBOARDING_STEPS = ["01 Create", "02 Customize", "03 Destination", "04 Account", "05 Done"] as const;
 
 /** Centered onboarding page: logo on top, content column below (onboarding-page — v2). */
 export function OnboardingShell({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-dvh flex-col items-center px-6 pt-12 pb-10 md:pt-[60px]">
+    <div className="relative flex min-h-dvh flex-col items-center px-6 pt-12 pb-10 md:pt-[60px]">
+      <LanguageSwitcher className="absolute top-4 right-4 md:top-6 md:right-6" />
       <Logo />
       <main className="flex w-full max-w-[640px] flex-1 flex-col items-center gap-10 pt-10 md:gap-12 md:pt-[60px]">
         {children}
@@ -18,11 +21,13 @@ export function OnboardingShell({ children }: { children: ReactNode }) {
 
 /** "01 Create — 02 Customize — …" on ≥ md, compact dashes on mobile. `current` is 0-based. */
 export function OnboardingStepper({ current }: { current: number }) {
-  const label = `Step ${current + 1} of ${ONBOARDING_STEPS.length}: ${ONBOARDING_STEPS[current].slice(3)}`;
+  const { t } = useI18n();
+  const steps = t.onboarding.steps;
+  const label = t.onboarding.stepOf(current + 1, steps.length, steps[current].slice(3));
   return (
     <>
-      <ol aria-label="Progress" className="hidden items-center gap-6 whitespace-nowrap md:flex">
-        {ONBOARDING_STEPS.map((s, i) => (
+      <ol aria-label={t.onboarding.progress} className="hidden items-center gap-6 whitespace-nowrap md:flex">
+        {steps.map((s, i) => (
           <Fragment key={s}>
             <li
               aria-current={i === current ? "step" : undefined}
@@ -33,12 +38,12 @@ export function OnboardingStepper({ current }: { current: number }) {
             >
               {s}
             </li>
-            {i < ONBOARDING_STEPS.length - 1 && <li aria-hidden className="-mx-3 h-px w-5 bg-line" />}
+            {i < steps.length - 1 && <li aria-hidden className="-mx-3 h-px w-5 bg-line" />}
           </Fragment>
         ))}
       </ol>
       <div className="flex gap-2 md:hidden" role="img" aria-label={label}>
-        {ONBOARDING_STEPS.map((s, i) => (
+        {steps.map((s, i) => (
           <span key={s} className={cn("h-[3px] rounded-full", i === current ? "w-8 bg-fg-strong" : i < current ? "w-3 bg-muted" : "w-3 bg-line")} />
         ))}
       </div>

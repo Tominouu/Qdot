@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { useI18n } from "@/lib/i18n/provider";
 import { isHexColor } from "@/lib/qr/scannability";
 import { cn } from "@/lib/utils/cn";
 
@@ -14,6 +15,7 @@ interface ColorFieldProps {
 
 export function ColorField({ label, value, onChange, layout = "row" }: ColorFieldProps) {
   const id = useId();
+  const { t } = useI18n();
   // Draft text while the user types; otherwise the field mirrors `value`.
   const [draft, setDraft] = useState<string | null>(null);
   const text = draft ?? value.toUpperCase();
@@ -29,7 +31,7 @@ export function ColorField({ label, value, onChange, layout = "row" }: ColorFiel
       <span className="absolute inset-0" style={{ background: value }} />
       <input
         type="color"
-        aria-label={`${label} color picker`}
+        aria-label={t.editor.panels.colorPicker(label)}
         value={value.toLowerCase()}
         onChange={(e) => onChange(e.target.value.toUpperCase())}
         className="absolute inset-0 cursor-pointer opacity-0"
@@ -61,7 +63,7 @@ export function ColorField({ label, value, onChange, layout = "row" }: ColorFiel
       <div className="flex h-10 items-center gap-3 rounded-lg border border-line bg-surface px-3">
         {swatch}
         <label htmlFor={id} className="sr-only">
-          {label} hex value
+          {t.editor.panels.hexValue(label)}
         </label>
         {hexInput}
       </div>

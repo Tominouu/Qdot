@@ -1,3 +1,6 @@
+"use client";
+
+import { useI18n } from "@/lib/i18n/provider";
 import { formatNumber } from "@/lib/utils/format";
 
 interface Row {
@@ -8,6 +11,7 @@ interface Row {
 
 /** Dark tooltip card shared by the Recharts charts. */
 export function ChartTooltipCard({ label, rows }: { label: string; rows: Row[] }) {
+  const { locale } = useI18n();
   return (
     <div className="min-w-36 rounded-lg border border-line bg-bg/95 px-3 py-2.5 shadow-xl shadow-black/40 backdrop-blur">
       <p className="mb-1.5 text-xs font-semibold text-fg-strong">{label}</p>
@@ -18,7 +22,7 @@ export function ChartTooltipCard({ label, rows }: { label: string; rows: Row[] }
               {r.color && <span className="size-2 rounded-full" style={{ background: r.color }} aria-hidden />}
               {r.name}
             </span>
-            <span className="font-semibold text-fg-strong tabular-nums">{formatNumber(r.value)}</span>
+            <span className="font-semibold text-fg-strong tabular-nums">{formatNumber(r.value, locale)}</span>
           </li>
         ))}
       </ul>

@@ -19,6 +19,8 @@ import { useToast } from "@/components/ui/toast";
 import { getQRCodeAnalytics } from "@/lib/api/analytics";
 import { deleteQRCode, getQRCode, updateQRCode } from "@/lib/api/qr";
 import { useResource } from "@/lib/hooks/use-resource";
+import { countryName, localizeShareLabel, localizeTimeLabel } from "@/lib/i18n/labels";
+import { useI18n } from "@/lib/i18n/provider";
 import { downloadQRCode } from "@/lib/qr/export";
 import { formatNumber } from "@/lib/utils/format";
 import type { TimeRange } from "@/types";
@@ -35,6 +37,8 @@ export function QRDetail({ id }: { id: string }) {
   const stats = useResource(() => getQRCodeAnalytics(id, range), [id, range]);
   const [modal, setModal] = useState<ModalName>(null);
   const [updating, setUpdating] = useState(false);
+  const { t, locale } = useI18n();
+  const d = t.detail;
 
   if (qrRes.error) return <NotFoundState />;
   const qr = qrRes.data;
@@ -48,19 +52,19 @@ export function QRDetail({ id }: { id: string }) {
     const next = await updateQRCode(qr.id, { status: paused ? "active" : "paused" });
     qrRes.setData(next);
     setUpdating(false);
-    toast(next.status === "paused" ? "QR code redirection paused" : "QR code is live again", next.status === "paused" ? "warning" : "success");
+    toast(next.status === "paused" ? d.paused : d.live, next.status === "paused" ? "warning" : "success");
   };
 
   const downloadSvg = async () => {
     await downloadQRCode({ payload: shortUrl, style: qr.style, name: qr.name, format: "svg" });
-    toast("SVG downloaded");
+    toast(d.svgDownloaded);
   };
 
   return (
     <div className="flex flex-col gap-10">
       {/* Mobile top nav (mobile-qr-detail frame) */}
       <div className="-mt-2 flex items-center gap-3 md:hidden">
-        <Link href="/qr-codes" aria-label="Back to QR codes" className="-ml-1 rounded-md p-1 text-fg">
+        <Link href="/qr-codes" aria-label={d.backToList} className="-ml-1 rounded-md p-1 text-fg">
           <ArrowLeft className="size-5" />
         </Link>
         <h1 className="min-w-0 flex-1 truncate font-display text-xl font-extrabold text-fg">{qr.name}</h1>
@@ -68,7 +72,7 @@ export function QRDetail({ id }: { id: string }) {
       </div>
 
       <header className="hidden flex-col gap-3 md:flex">
-        <Breadcrumb items={[{ label: "QR Codes", href: "/qr-codes" }, { label: qr.name }]} />
+        <Breadcrumb items={[{ label: t.nav.qrCodes, href: "/qr-codes" }, { label: qr.name }]} />
         <div className="flex flex-wrap items-center justify-between gap-6">
           <div className="flex min-w-0 flex-col gap-2">
             <div className="flex items-center gap-3">
@@ -79,18 +83,18 @@ export function QRDetail({ id }: { id: string }) {
               <a href={qr.destinationUrl} target="_blank" rel="noreferrer" className="truncate text-sm text-muted hover:text-fg hover:underline">
                 {qr.destinationUrl}
               </a>
-              <CopyButton value={qr.destinationUrl} label="Copy destination URL" toastMessage="Destination URL copied" />
+              <CopyButton value={qr.destinationUrl} label={d.copyDestination} toastMessage={d.destinationCopied} />
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
             <ButtonLink href={`/qr-codes/${qr.id}/edit`} variant="neutral" className="h-[37px] rounded-lg px-4 text-[13px]">
-              Edit
+              {t.common.edit}
             </ButtonLink>
             <Button variant="neutral" className="h-[37px] rounded-lg px-4 text-[13px]" onClick={downloadSvg}>
-              Download SVG
+              {d.downloadSvg}
             </Button>
             <Button variant="neutral" className="h-[37px] rounded-lg px-4 text-[13px]" onClick={() => setModal("share")}>
-              Share
+              {t.common.share}
             </Button>
             {qr.status !== "archived" && (
               <Button
@@ -99,30 +103,30 @@ export function QRDetail({ id }: { id: string }) {
                 disabled={updating}
                 onClick={toggleStatus}
               >
-                {paused ? "Resume QR" : "Pause QR"}
+                {paused ? d.resumeQr : d.pauseQr}
               </Button>
             )}
           </div>
         </div>
       </header>
 
-      <section aria-label="QR code and key metrics" className="flex flex-col gap-6 md:gap-10 lg:flex-row">
+      <section aria-label={d.keyMetrics} className="flex flex-col gap-6 md:gap-10 lg:flex-row">
         <Card className="flex flex-col items-center gap-6 bg-bg p-8 md:bg-surface lg:w-[380px] lg:shrink-0">
           <div className="w-full max-w-[240px] animate-fade-up">
-            <StyledQR value={shortUrl} style={qr.style} title={`${qr.name} QR code, encodes ${shortUrl}`} />
+            <StyledQR value={shortUrl} style={qr.style} title={t.common.qrEncodes(qr.name, shortUrl)} />
           </div>
           <p className="flex items-center gap-2 text-[13px] font-semibold text-fg-strong">
-            <Check className="size-4" aria-hidden /> V2.0 Fully Custom Style
+            <Check className="size-4" aria-hidden /> {d.customStyle}
           </p>
         </Card>
 
         {/* Mobile action grid */}
         <div className="grid grid-cols-4 gap-2 md:hidden">
-          <MobileAction icon={<Pencil />} label="Edit" href={`/qr-codes/${qr.id}/edit`} />
-          <MobileAction icon={<Download />} label="Download" onClick={() => setModal("export")} />
-          <MobileAction icon={<Share />} label="Share" onClick={() => setModal("share")} />
+          <MobileAction icon={<Pencil />} label={t.common.edit} href={`/qr-codes/${qr.id}/edit`} />
+          <MobileAction icon={<Download />} label={d.download} onClick={() => setModal("export")} />
+          <MobileAction icon={<Share />} label={t.common.share} onClick={() => setModal("share")} />
           {qr.status !== "archived" && (
-            <MobileAction icon={paused ? <Play /> : <Pause />} label={paused ? "Resume" : "Pause"} onClick={toggleStatus} />
+            <MobileAction icon={paused ? <Play /> : <Pause />} label={paused ? d.resume : d.pause} onClick={toggleStatus} />
           )}
         </div>
 
@@ -130,26 +134,30 @@ export function QRDetail({ id }: { id: string }) {
           {stats.data ? (
             <>
               <StatCard
-                label="Total scans"
-                value={formatNumber(stats.data.totalScans)}
+                label={d.totalScans}
+                value={formatNumber(stats.data.totalScans, locale)}
                 delta={stats.data.totalScansDelta?.value}
                 sparkline={stats.data.sparklines.total}
               />
               <StatCard
-                label="Unique visitors"
-                value={formatNumber(stats.data.uniqueVisitors)}
+                label={d.uniqueVisitors}
+                value={formatNumber(stats.data.uniqueVisitors, locale)}
                 delta={stats.data.uniqueVisitorsDelta?.value}
                 sparkline={stats.data.sparklines.unique}
               />
               <StatCard
-                label="Countries"
+                label={d.countries}
                 value={stats.data.countryCount}
-                footnote={stats.data.countries[0] && stats.data.countries[0].countryCode !== "XX" ? `Mostly ${stats.data.countries[0].label}` : "Where scans come from"}
+                footnote={
+                  stats.data.countries[0] && stats.data.countries[0].countryCode !== "XX"
+                    ? d.mostly(countryName(stats.data.countries[0].countryCode, stats.data.countries[0].label, locale))
+                    : d.whereFrom
+                }
               />
               <StatCard
-                label="Mobile scans"
-                value={`${stats.data.mobileShare}%`}
-                footnote={stats.data.dominantPlatform ? `${stats.data.dominantPlatform} dominant platform` : "Share of scans from phones"}
+                label={d.mobileScans}
+                value={locale === "fr" ? `${stats.data.mobileShare} %` : `${stats.data.mobileShare}%`}
+                footnote={stats.data.dominantPlatform ? d.dominant(localizeShareLabel(stats.data.dominantPlatform, t)) : d.phoneShare}
               />
             </>
           ) : (
@@ -161,8 +169,8 @@ export function QRDetail({ id }: { id: string }) {
       <Card className="flex flex-col gap-6 p-5 md:p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <CardTitle>
-            <span className="md:hidden">Scans Timeline</span>
-            <span className="hidden md:inline">Performance History</span>
+            <span className="md:hidden">{d.timeline}</span>
+            <span className="hidden md:inline">{d.history}</span>
           </CardTitle>
           <RangeChips value={range} onChange={setRange} />
         </div>
@@ -170,36 +178,37 @@ export function QRDetail({ id }: { id: string }) {
           <Skeleton className="h-[240px] w-full" />
         ) : stats.data && stats.data.totalScans > 0 ? (
           <>
-            <ScansLineChart data={stats.data.timeseries} label={`Scans for ${qr.name} over the selected period`} />
+            <ScansLineChart data={stats.data.timeseries} label={d.chartLabel(qr.name)} />
             {stats.data.peak && (
               <p className="flex w-fit items-center gap-2 rounded-lg border border-line bg-bg p-3 text-[13px] text-muted-2">
                 <span className="size-2 rounded-full bg-fg-strong" aria-hidden />
                 <span>
-                  Peak Activity: <b className="font-bold text-fg-strong">{stats.data.peak.label}</b> · {formatNumber(stats.data.peak.scans)} scans
+                  {d.peak} <b className="font-bold text-fg-strong">{localizeTimeLabel(stats.data.peak.label, locale)}</b> ·{" "}
+                  {t.common.scans(stats.data.peak.scans, formatNumber(stats.data.peak.scans, locale))}
                 </span>
               </p>
             )}
           </>
         ) : (
-          <p className="py-16 text-center text-sm text-muted">No scans yet — share your code to start collecting data.</p>
+          <p className="py-16 text-center text-sm text-muted">{d.noScans}</p>
         )}
       </Card>
 
       {stats.data && stats.data.countries.length > 0 && (
         <section className="flex flex-col gap-4 md:hidden">
-          <h2 className="font-display text-lg font-extrabold text-fg">Top Locations</h2>
+          <h2 className="font-display text-lg font-extrabold text-fg">{d.topLocations}</h2>
           <ShareBars items={stats.data.countries} />
         </section>
       )}
 
       <section className="flex flex-col gap-4">
-        <h2 className="font-display text-xl font-extrabold text-fg">Recent scan history</h2>
+        <h2 className="font-display text-xl font-extrabold text-fg">{d.recent}</h2>
         {stats.data ? <ScansTable scans={stats.data.recentScans} /> : <Skeleton className="h-[240px] w-full rounded-2xl" />}
       </section>
 
       <div className="flex justify-end">
         <Button variant="ghost-danger" size="sm" leadingIcon={<Trash2 className="size-4" />} onClick={() => setModal("delete")}>
-          Delete QR code
+          {d.deleteQr}
         </Button>
       </div>
 
@@ -211,7 +220,7 @@ export function QRDetail({ id }: { id: string }) {
         onClose={() => setModal(null)}
         onConfirm={async () => {
           await deleteQRCode(qr.id);
-          toast(`${qr.name} deleted`, "info");
+          toast(d.deleted(qr.name), "info");
           router.push("/qr-codes");
         }}
       />
@@ -253,12 +262,13 @@ function DetailSkeleton() {
 }
 
 function NotFoundState() {
+  const { t } = useI18n();
   return (
     <div className="flex flex-col items-center gap-4 py-24 text-center">
-      <h1 className="font-display text-2xl font-bold text-fg">QR code not found</h1>
-      <p className="text-muted">It may have been deleted.</p>
+      <h1 className="font-display text-2xl font-bold text-fg">{t.detail.notFoundTitle}</h1>
+      <p className="text-muted">{t.detail.notFoundText}</p>
       <ButtonLink href="/qr-codes" variant="neutral">
-        Back to QR codes
+        {t.common.backToQrCodes}
       </ButtonLink>
     </div>
   );

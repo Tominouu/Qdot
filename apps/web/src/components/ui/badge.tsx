@@ -1,28 +1,31 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils/cn";
 import { formatDelta } from "@/lib/utils/format";
 import type { QRStatus } from "@/types";
 
-const STATUS: Record<QRStatus, { label: string; className: string }> = {
-  active: { label: "Active", className: "border-success bg-success/10 text-success" },
-  paused: { label: "Paused", className: "border-warning bg-warning/10 text-warning" },
-  archived: { label: "Archived", className: "border-subtle bg-subtle/10 text-subtle" },
-  draft: { label: "Draft", className: "border-line-strong bg-surface-raised text-muted" },
+const STATUS_CLASS: Record<QRStatus, string> = {
+  active: "border-success bg-success/10 text-success",
+  paused: "border-warning bg-warning/10 text-warning",
+  archived: "border-subtle bg-subtle/10 text-subtle",
+  draft: "border-line-strong bg-surface-raised text-muted",
 };
 
 /** Outlined status pill with a dot (library cards, detail header). */
 export function StatusBadge({ status, className }: { status: QRStatus; className?: string }) {
-  const s = STATUS[status];
+  const { t } = useI18n();
   return (
     <span
       className={cn(
         "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] leading-none font-semibold",
-        s.className,
+        STATUS_CLASS[status],
         className,
       )}
     >
       <span className="size-1.5 rounded-full bg-current" aria-hidden />
-      {s.label}
+      {t.status[status]}
     </span>
   );
 }
@@ -52,6 +55,7 @@ export function DeltaBadge({
   label?: string;
   tone?: "positive" | "neutral";
 }) {
+  const { locale } = useI18n();
   const negative = value !== undefined && value < 0;
   return (
     <span
@@ -60,7 +64,7 @@ export function DeltaBadge({
         tone === "neutral" ? "bg-white/10 text-white" : negative ? "bg-danger/10 text-danger" : "bg-success/10 text-success",
       )}
     >
-      {label ?? (value !== undefined ? formatDelta(value) : null)}
+      {label ?? (value !== undefined ? formatDelta(value, locale) : null)}
     </span>
   );
 }

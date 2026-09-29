@@ -1,13 +1,19 @@
+"use client";
+
 import { Eyebrow } from "@/components/ui/card";
+import { localizeShareLabel } from "@/lib/i18n/labels";
+import { useI18n } from "@/lib/i18n/provider";
 import type { ShareItem } from "@/types";
 
 const DEVICE_COLORS = ["#e8503a", "#3b82f6", "#71717a"];
 const BROWSER_COLORS = ["#e8503a", "#3b82f6", "#71717a", "#71717a"];
 
-export function DeviceBar({ items }: { items: ShareItem[] }) {
+export function DeviceBar({ items: raw }: { items: ShareItem[] }) {
+  const { t } = useI18n();
+  const items = raw.map((d) => ({ ...d, label: localizeShareLabel(d.label, t) }));
   return (
     <div className="flex flex-col gap-3">
-      <Eyebrow className="text-xs">Device breakdown</Eyebrow>
+      <Eyebrow className="text-xs">{t.analytics.devices}</Eyebrow>
       <div className="flex h-6 overflow-hidden rounded-xl" role="img" aria-label={items.map((d) => `${d.label} ${d.share}%`).join(", ")}>
         {items.map((d, i) => (
           <div
@@ -29,16 +35,17 @@ export function DeviceBar({ items }: { items: ShareItem[] }) {
   );
 }
 
-export function BrowserList({ items, title = "Browser share" }: { items: ShareItem[]; title?: string }) {
+export function BrowserList({ items, title }: { items: ShareItem[]; title?: string }) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-col gap-3">
-      <Eyebrow className="text-xs">{title}</Eyebrow>
+      <Eyebrow className="text-xs">{title ?? t.analytics.browsers}</Eyebrow>
       <ul className="flex flex-col gap-3">
         {items.map((b, i) => (
           <li key={b.label} className="flex items-center justify-between gap-3 text-[13px]">
             <span className="flex items-center gap-3 text-fg-strong">
               <span className="size-3 rounded-[2px]" style={{ background: BROWSER_COLORS[i % BROWSER_COLORS.length] }} aria-hidden />
-              {b.label}
+              {localizeShareLabel(b.label, t)}
             </span>
             <span className="text-subtle tabular-nums">{b.share}%</span>
           </li>

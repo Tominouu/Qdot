@@ -2,6 +2,8 @@
 
 import { useMemo } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { localizeTimeLabel } from "@/lib/i18n/labels";
+import { useI18n } from "@/lib/i18n/provider";
 import type { ChannelSeries } from "@/types";
 import { CHART, SERIES_COLORS } from "./chart-theme";
 import { ChartTooltipCard } from "./chart-tooltip";
@@ -14,15 +16,19 @@ interface ChannelsLineChartProps {
 
 /** "Scans over time · By Channel": one line per QR code in the campaign. */
 export function ChannelsLineChart({ labels, channels, height = 240 }: ChannelsLineChartProps) {
+  const { t, locale } = useI18n();
   const data = useMemo(
-    () => labels.map((label, i) => Object.fromEntries([["label", label], ...channels.map((c) => [c.qrCodeId, c.points[i]])])),
-    [labels, channels],
+    () =>
+      labels.map((label, i) =>
+        Object.fromEntries([["label", localizeTimeLabel(label, locale)], ...channels.map((c) => [c.qrCodeId, c.points[i]])]),
+      ),
+    [labels, channels, locale],
   );
   const colorOf = (i: number) => SERIES_COLORS[i % SERIES_COLORS.length];
 
   return (
     <div className="flex flex-col gap-4">
-      <div role="img" aria-label={`Scans per day by QR code: ${channels.map((c) => c.name).join(", ")}`} style={{ height }}>
+      <div role="img" aria-label={t.analytics.byChannel(channels.map((c) => c.name).join(", "))} style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 12, right: 12, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} stroke={CHART.grid} strokeOpacity={0.45} />
@@ -59,7 +65,7 @@ export function ChannelsLineChart({ labels, channels, height = 240 }: ChannelsLi
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <ul className="flex flex-wrap gap-x-5 gap-y-2" aria-label="Legend">
+      <ul className="flex flex-wrap gap-x-5 gap-y-2" aria-label={t.analytics.legend}>
         {channels.map((c, i) => (
           <li key={c.qrCodeId} className="flex items-center gap-2 text-xs text-muted-2">
             <span className="h-0.5 w-4 rounded-full" style={{ background: colorOf(i) }} aria-hidden />

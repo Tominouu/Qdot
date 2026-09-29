@@ -13,7 +13,7 @@ export function LogoMark({ className }: { className?: string }) {
 
 export function Logo({ href = "/", className }: { href?: string; className?: string }) {
   return (
-    <Link href={href} className={cn("inline-flex items-center gap-2.5 rounded-md", className)} aria-label="Qdot home">
+    <Link href={href} className={cn("inline-flex items-center gap-2.5 rounded-md", className)} aria-label="Qdot">
       <LogoMark />
       <span className="font-display text-xl font-extrabold text-fg">Qdot</span>
     </Link>

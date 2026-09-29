@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/field";
 import { Segmented } from "@/components/ui/segmented";
 import { listQRCodes } from "@/lib/api/qr";
 import { useResource } from "@/lib/hooks/use-resource";
+import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils/cn";
 import type { QRStatus } from "@/types";
 import { CsvImportButton } from "./csv-import-button";
@@ -23,6 +24,8 @@ export function QRLibrary() {
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [view, setView] = useState<View>("grid");
+  const { t } = useI18n();
+  const l = t.library;
 
   const counts = useMemo(() => {
     const all = codes ?? [];
@@ -46,12 +49,12 @@ export function QRLibrary() {
       <EmptyState
         className="min-h-[70dvh]"
         visual={<EmptyQRVisual />}
-        title="No QR codes yet"
-        description="Create your first QR code and start tracking scans."
+        title={l.emptyTitle}
+        description={l.emptyDescription}
         actions={
           <>
             <ButtonLink href="/onboarding" variant="inverse" className="h-[42px] min-w-[153px]">
-              Create QR code
+              {l.create}
             </ButtonLink>
             <CsvImportButton onImported={reload} />
           </>
@@ -63,15 +66,15 @@ export function QRLibrary() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        title="Your QR codes"
-        description="Manage and monitor your digital interaction ecosystem."
+        title={l.title}
+        description={l.description}
         actions={
           <>
             <div className="w-full md:w-[260px]">
               <Input
                 type="search"
-                aria-label="Search QR codes"
-                placeholder="Search QR codes..."
+                aria-label={l.search}
+                placeholder={l.searchPlaceholder}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 icon={<Search className="size-3.5" />}
@@ -79,7 +82,7 @@ export function QRLibrary() {
               />
             </div>
             <ButtonLink href="/onboarding" className="hidden md:inline-flex">
-              Create QR code
+              {l.create}
             </ButtonLink>
           </>
         }
@@ -88,23 +91,23 @@ export function QRLibrary() {
       <div className="flex items-center justify-between gap-4 border-b border-line pb-4">
         <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:px-0">
           <Segmented
-            label="Filter by status"
+            label={l.filter}
             size="md"
             value={filter}
             onChange={setFilter}
             options={[
-              { value: "all", label: `All (${counts.all})` },
-              { value: "active", label: `Active (${counts.active})` },
-              { value: "paused", label: `Paused (${counts.paused})` },
-              { value: "archived", label: `Archived (${counts.archived})` },
+              { value: "all", label: `${l.all} (${counts.all})` },
+              { value: "active", label: `${t.status.active} (${counts.active})` },
+              { value: "paused", label: `${t.status.paused} (${counts.paused})` },
+              { value: "archived", label: `${t.status.archived} (${counts.archived})` },
             ]}
           />
         </div>
-        <div className="hidden gap-2 sm:flex" role="group" aria-label="View">
+        <div className="hidden gap-2 sm:flex" role="group" aria-label={l.view}>
           {(
             [
-              ["grid", LayoutGrid, "Grid view"],
-              ["list", List, "List view"],
+              ["grid", LayoutGrid, l.grid],
+              ["list", List, l.list],
             ] as const
           ).map(([v, Icon, label]) => (
             <button
@@ -131,7 +134,7 @@ export function QRLibrary() {
           ))}
         </div>
       ) : visible.length === 0 ? (
-        <p className="py-16 text-center text-sm text-muted">No QR codes match your filters.</p>
+        <p className="py-16 text-center text-sm text-muted">{l.noMatch}</p>
       ) : (
         <>
           <ul className={cn("gap-6", view === "grid" ? "hidden sm:grid sm:grid-cols-2 xl:grid-cols-3" : "hidden sm:flex sm:flex-col sm:gap-3")}>
@@ -156,7 +159,7 @@ export function QRLibrary() {
         className="fixed right-4 bottom-24 z-30 hidden h-auto rounded-full p-4 font-bold shadow-[0_8px_12px_rgba(232,80,58,0.45)] sm:flex lg:hidden"
         leadingIcon={<Plus className="size-[18px]" />}
       >
-        Create QR code
+        {l.create}
       </ButtonLink>
     </div>
   );

@@ -7,6 +7,8 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requestPasswordReset } from "@/lib/api/auth";
+import { errorMessage } from "@/lib/i18n/errors";
+import { useI18n } from "@/lib/i18n/provider";
 import { usePendingQR } from "@/lib/onboarding/pending-qr";
 import { AuthPanel } from "./auth-panel";
 import { AuthScreen, TextLink } from "./auth-screen";
@@ -17,20 +19,18 @@ const ACCOUNT_HREF = "/onboarding/account";
 /** Onboarding step 04 — create an account to save the configured QR code. */
 export function SignUpView() {
   const pending = usePendingQR();
+  const { t } = useI18n();
+  const s = t.auth.signUp;
   return (
     <AuthScreen
-      title={pending === null ? "Create your account." : "Save your QR code."}
-      description={
-        pending === null
-          ? "Create a free Qdot account to manage your QR codes and access scan analytics."
-          : "Create a free Qdot account to save it, update it anytime, and see who scans it."
-      }
+      title={pending === null ? s.title : s.titlePending}
+      description={pending === null ? s.description : s.descriptionPending}
       footer={
         <>
-          Already have an account? <TextLink href="/sign-in">Sign in</TextLink>
+          {s.haveAccount} <TextLink href="/sign-in">{t.auth.signIn}</TextLink>
         </>
       }
-      back={pending ? { href: RESUME_EDITOR_HREF, label: "Back to your QR code" } : undefined}
+      back={pending ? { href: RESUME_EDITOR_HREF, label: s.backToQr } : undefined}
     >
       {pending === undefined ? <Skeleton className="h-[82px] w-full rounded-2xl" /> : pending && <PendingQRSummary pending={pending} />}
       <AuthPanel mode="sign-up" />
@@ -40,16 +40,18 @@ export function SignUpView() {
 
 export function SignInView() {
   const pending = usePendingQR();
+  const { t } = useI18n();
+  const s = t.auth.signInView;
   return (
     <AuthScreen
-      title="Welcome back."
-      description={pending ? "Sign in to save your QR code to your workspace." : "Sign in to manage your QR codes and analytics."}
+      title={s.title}
+      description={pending ? s.descriptionPending : s.description}
       footer={
         <>
-          Don&apos;t have an account? <TextLink href={ACCOUNT_HREF}>Create one</TextLink>
+          {s.noAccount} <TextLink href={ACCOUNT_HREF}>{s.createOne}</TextLink>
         </>
       }
-      back={pending ? { href: ACCOUNT_HREF, label: "Return to onboarding" } : { href: "/", label: "Back to home" }}
+      back={pending ? { href: ACCOUNT_HREF, label: s.returnOnboarding } : { href: "/", label: s.backHome }}
     >
       <AuthPanel mode="sign-in" />
     </AuthScreen>
@@ -62,32 +64,36 @@ export function ForgotPasswordView() {
   const [touched, setTouched] = useState(false);
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
   const [requestError, setError] = useState<string | null>(null);
-  const error = touched ? validateEmail(email) : null;
+  const { t } = useI18n();
+  const f = t.auth.forgotView;
+  const error = touched ? validateEmail(email, t) : null;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setTouched(true);
-    if (validateEmail(email)) return;
+    if (validateEmail(email, t)) return;
     setStatus("sending");
     setError(null);
     try {
       await requestPasswordReset(email.trim());
       setStatus("sent");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setError(errorMessage(err, t));
       setStatus("idle");
     }
   };
 
-  const back = pending ? { href: ACCOUNT_HREF, label: "Return to onboarding" } : undefined;
+  const back = pending ? { href: ACCOUNT_HREF, label: t.auth.signInView.returnOnboarding } : undefined;
 
   if (status === "sent") {
     return (
       <AuthScreen
-        title="Check your inbox."
+        title={f.sentTitle}
         description={
           <>
-            If an account exists for <span className="font-semibold text-fg">{email.trim()}</span>, a reset link is on its way.
+            {f.sentBefore}
+            <span className="font-semibold text-fg">{email.trim()}</span>
+            {f.sentAfter}
           </>
         }
         back={back}
@@ -97,10 +103,10 @@ export function ForgotPasswordView() {
         </span>
         <div className="flex w-full flex-col gap-3">
           <ButtonLink href="/sign-in" variant="inverse" className="h-12 w-full md:h-[42px]">
-            Back to sign in
+            {f.backToSignIn}
           </ButtonLink>
           <Button variant="ghost" className="h-12 w-full md:h-[42px]" onClick={() => setStatus("idle")}>
-            Use a different email
+            {f.differentEmail}
           </Button>
         </div>
       </AuthScreen>
@@ -109,11 +115,11 @@ export function ForgotPasswordView() {
 
   return (
     <AuthScreen
-      title="Reset your password."
-      description="Enter your email and we'll send you a link to reset your password."
+      title={f.title}
+      description={f.description}
       footer={
         <>
-          Remembered it? <TextLink href="/sign-in">Back to sign in</TextLink>
+          {f.remembered} <TextLink href="/sign-in">{f.backToSignIn}</TextLink>
         </>
       }
       back={back}
@@ -125,14 +131,14 @@ export function ForgotPasswordView() {
             {requestError}
           </p>
         )}
-        <Field label="Email" error={error ?? undefined} labelClassName="text-[13px] font-medium text-muted">
+        <Field label={t.auth.email} error={error ?? undefined} labelClassName="text-[13px] font-medium text-muted">
           {(id, describedBy) => (
             <Input
               id={id}
               type="email"
               inputMode="email"
               autoComplete="email"
-              placeholder="you@company.com"
+              placeholder={t.auth.emailPlaceholder}
               value={email}
               disabled={status === "sending"}
               aria-invalid={error ? true : undefined}
@@ -150,7 +156,7 @@ export function ForgotPasswordView() {
           aria-busy={status === "sending"}
           leadingIcon={status === "sending" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : undefined}
         >
-          {status === "sending" ? "Sending…" : "Send reset link"}
+          {status === "sending" ? f.sending : f.send}
         </Button>
       </form>
     </AuthScreen>

@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import { getDictionary } from "@/lib/i18n/server";
 import { NewQREditor } from "@/components/qr/editor/new-qr-editor";
 import { generateSlug } from "@/lib/qr/slug";
 import type { QRCategory } from "@/types";
 
-export const metadata: Metadata = { title: "New QR code" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getDictionary()).meta.newQr };
+}
 
 const CATEGORIES: QRCategory[] = ["website", "menu", "event", "social", "app", "custom"];
 

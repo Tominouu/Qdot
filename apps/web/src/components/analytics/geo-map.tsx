@@ -1,5 +1,9 @@
+"use client";
+
 import { COUNTRY_CENTROIDS } from "@/lib/geo/country-centroids";
 import { LAND_GRID, isLand } from "@/lib/geo/world-land";
+import { countryName } from "@/lib/i18n/labels";
+import { useI18n } from "@/lib/i18n/provider";
 import type { CountryShare } from "@/types";
 
 /** Viewport aspect (lng° per lat°), roughly the card's map area. */
@@ -11,6 +15,7 @@ const MIN_SPAN_LNG = 110;
  * projection, framed around the known countries with a minimum span so context stays visible.
  */
 export function GeoMap({ points, className }: { points: CountryShare[]; className?: string }) {
+  const { t, locale } = useI18n();
   const located = points.flatMap((p) => {
     const c = COUNTRY_CENTROIDS[p.countryCode];
     return c ? [{ ...p, lat: c[0], lng: c[1] }] : [];
@@ -27,7 +32,7 @@ export function GeoMap({ points, className }: { points: CountryShare[]; classNam
   return (
     <div
       role="img"
-      aria-label={`Scan locations: ${located.map((p) => `${p.label} ${p.share}%`).join(", ")}`}
+      aria-label={`${t.analytics.scanLocations}: ${located.map((p) => `${countryName(p.countryCode, p.label, locale)} ${p.share}%`).join(", ")}`}
       className={`relative h-[180px] overflow-hidden rounded-lg bg-inset ${className ?? ""}`}
     >
       <svg

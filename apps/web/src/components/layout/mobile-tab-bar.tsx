@@ -3,12 +3,14 @@
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils/cn";
 import { MOBILE_TABS, isActive, type NavItem } from "./nav-items";
 
 function Tab({ item, pathname }: { item: NavItem; pathname: string }) {
   const active = isActive(pathname, item.match);
   const Icon = item.icon;
+  const { t } = useI18n();
   return (
     <Link
       href={item.href}
@@ -19,7 +21,7 @@ function Tab({ item, pathname }: { item: NavItem; pathname: string }) {
       )}
     >
       <Icon className="size-5" strokeWidth={1.75} aria-hidden />
-      {item.label}
+      {t.nav[item.label]}
     </Link>
   );
 }
@@ -27,9 +29,10 @@ function Tab({ item, pathname }: { item: NavItem; pathname: string }) {
 /** Bottom navigation for < lg screens (mobile-analytics / mobile-qr-library frames). */
 export function MobileTabBar() {
   const pathname = usePathname();
+  const { t } = useI18n();
   return (
     <nav
-      aria-label="Main"
+      aria-label={t.nav.main}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-sidebar/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
     >
       <div className="relative mx-auto flex h-[68px] max-w-lg items-center px-2">
@@ -39,7 +42,7 @@ export function MobileTabBar() {
         <div className="flex w-20 justify-center">
           <Link
             href="/qr-codes/new"
-            aria-label="Create QR code"
+            aria-label={t.nav.createQr}
             className="-mt-9 flex size-14 items-center justify-center rounded-full bg-accent text-white shadow-[0_8px_16px_rgba(232,80,58,0.45)] transition-transform hover:bg-accent-hover active:scale-95"
           >
             <Plus className="size-6" aria-hidden />

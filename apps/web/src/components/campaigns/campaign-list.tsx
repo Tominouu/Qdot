@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listCampaigns } from "@/lib/api/campaigns";
 import { useResource } from "@/lib/hooks/use-resource";
+import { useI18n } from "@/lib/i18n/provider";
 import { formatDate } from "@/lib/utils/format";
 import { EditCampaignModal } from "./edit-campaign-modal";
 
@@ -19,9 +20,11 @@ export function CampaignList() {
   const router = useRouter();
   const { data, loading } = useResource(listCampaigns, []);
   const [creating, setCreating] = useState(false);
+  const { t, locale } = useI18n();
+  const c = t.campaigns;
 
   const modal = (
-    <EditCampaignModal open={creating} onClose={() => setCreating(false)} onSaved={(c) => router.push(`/campaigns/${c.id}`)} />
+    <EditCampaignModal open={creating} onClose={() => setCreating(false)} onSaved={(saved) => router.push(`/campaigns/${saved.id}`)} />
   );
 
   if (!loading && data?.length === 0) {
@@ -34,11 +37,11 @@ export function CampaignList() {
               <Megaphone className="size-6" aria-hidden />
             </span>
           }
-          title="No campaigns yet"
-          description="Group QR codes into a campaign to compare how each placement performs."
+          title={c.emptyTitle}
+          description={c.emptyDescription}
           actions={
             <Button variant="inverse" className="h-[42px]" onClick={() => setCreating(true)}>
-              Create campaign
+              {c.create}
             </Button>
           }
         />
@@ -50,11 +53,11 @@ export function CampaignList() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        title="Campaigns"
-        description="Group QR codes and compare their performance."
+        title={c.title}
+        description={c.description}
         actions={
           <Button onClick={() => setCreating(true)} leadingIcon={<Plus className="size-4" />}>
-            New campaign
+            {c.newCampaign}
           </Button>
         }
       />
@@ -65,22 +68,22 @@ export function CampaignList() {
                 <Skeleton className="h-[150px] rounded-2xl" />
               </li>
             ))
-          : data.map((c) => (
-              <li key={c.id} className="animate-fade-up">
+          : data.map((campaign) => (
+              <li key={campaign.id} className="animate-fade-up">
                 <Link
-                  href={`/campaigns/${c.id}`}
+                  href={`/campaigns/${campaign.id}`}
                   className="group block h-full rounded-2xl transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg-strong"
                 >
                   <Card className="flex h-full flex-col gap-4 p-6 transition-colors group-hover:border-line-strong">
                     <div className="flex flex-col gap-1.5">
-                      <h2 className="truncate font-display text-lg font-extrabold text-fg">{c.name}</h2>
-                      <p className="line-clamp-2 min-h-[2.5em] text-[13px] text-muted">{c.description || "No description"}</p>
+                      <h2 className="truncate font-display text-lg font-extrabold text-fg">{campaign.name}</h2>
+                      <p className="line-clamp-2 min-h-[2.5em] text-[13px] text-muted">{campaign.description || c.noDescription}</p>
                     </div>
                     <div className="mt-auto flex items-center justify-between border-t border-line pt-4 text-xs">
                       <span className="font-semibold text-fg">
-                        {c.qrCodeCount} QR code{c.qrCodeCount === 1 ? "" : "s"}
+                        {c.qrCount(campaign.qrCodeCount)}
                       </span>
-                      <span className="text-faint">Created {formatDate(c.createdAt)}</span>
+                      <span className="text-faint">{c.createdOn(formatDate(campaign.createdAt, locale))}</span>
                     </div>
                   </Card>
                 </Link>

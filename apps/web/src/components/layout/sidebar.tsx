@@ -4,7 +4,9 @@ import { LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Avatar } from "@/components/ui/avatar";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { useSignOut } from "@/lib/auth/use-sign-out";
+import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils/cn";
 import type { User } from "@/types";
 import { Logo } from "./logo";
@@ -25,10 +27,11 @@ export function UserChip({ user, className }: { user: User; className?: string }
 export function Sidebar({ user }: { user: User }) {
   const pathname = usePathname();
   const signOut = useSignOut();
+  const { t } = useI18n();
   return (
     <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-line bg-sidebar p-6 lg:flex">
       <Logo href="/qr-codes" />
-      <nav aria-label="Main" className="mt-10">
+      <nav aria-label={t.nav.main} className="mt-10">
         <ul className="flex flex-col gap-2">
           {SIDEBAR_NAV.map((item) => {
             const active = isActive(pathname, item.match);
@@ -46,20 +49,21 @@ export function Sidebar({ user }: { user: User }) {
                   )}
                 >
                   <Icon className="size-[18px] shrink-0" strokeWidth={1.75} aria-hidden />
-                  {item.label}
+                  {t.nav[item.label]}
                 </Link>
               </li>
             );
           })}
         </ul>
       </nav>
-      <div className="mt-auto flex items-center gap-2 border-t border-line pt-4">
+      <LanguageSwitcher className="mt-auto mb-4 self-start" />
+      <div className="flex items-center gap-2 border-t border-line pt-4">
         <UserChip user={user} className="flex-1" />
         <button
           type="button"
           onClick={signOut}
-          aria-label="Sign out"
-          title="Sign out"
+          aria-label={t.nav.signOut}
+          title={t.nav.signOut}
           className="rounded-md p-2 text-subtle transition-colors hover:bg-surface hover:text-fg"
         >
           <LogOut className="size-4" />

@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { Fragment } from "react";
+import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils/cn";
 
 export interface Crumb {
@@ -8,8 +11,9 @@ export interface Crumb {
 }
 
 export function Breadcrumb({ items, className }: { items: Crumb[]; className?: string }) {
+  const { t } = useI18n();
   return (
-    <nav aria-label="Breadcrumb" className={cn("min-w-0", className)}>
+    <nav aria-label={t.common.breadcrumb} className={cn("min-w-0", className)}>
       <ol className="flex items-center gap-2 text-[13px]">
         {items.map((item, i) => {
           const last = i === items.length - 1;

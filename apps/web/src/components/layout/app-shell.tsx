@@ -4,10 +4,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { Avatar } from "@/components/ui/avatar";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getMe } from "@/lib/api/auth";
 import { clearSession, getSession, setSession } from "@/lib/auth/session";
 import { useResource } from "@/lib/hooks/use-resource";
+import { errorMessage } from "@/lib/i18n/errors";
+import { useI18n } from "@/lib/i18n/provider";
 import { Logo } from "./logo";
 import { MobileTabBar } from "./mobile-tab-bar";
 import { Sidebar } from "./sidebar";
@@ -20,6 +23,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { data: user, error, loading } = useResource(getMe, []);
+  const { t } = useI18n();
 
   useEffect(() => {
     if (loading) return;
@@ -35,8 +39,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-3 px-6 text-center">
         <Logo />
-        <p className="mt-4 font-display text-xl font-bold text-fg">Can&apos;t reach Qdot</p>
-        <p className="max-w-sm text-sm text-muted">{error.message}</p>
+        <p className="mt-4 font-display text-xl font-bold text-fg">{t.nav.cantReach}</p>
+        <p className="max-w-sm text-sm text-muted">{errorMessage(error, t, error.message)}</p>
       </div>
     );
   }
@@ -58,9 +62,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between px-4 pt-4 sm:px-6 lg:hidden">
           <Logo href="/qr-codes" />
-          <Link href="/settings" aria-label="Account and settings" className="rounded-full">
-            <Avatar user={user} />
-          </Link>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+            <Link href="/settings" aria-label={t.nav.accountSettings} className="rounded-full">
+              <Avatar user={user} />
+            </Link>
+          </div>
         </header>
         <main id="main" className="flex-1 px-4 pt-6 pb-32 sm:px-6 lg:px-10 lg:pt-10 lg:pb-16">
           <div className="mx-auto w-full max-w-[1120px]">{children}</div>

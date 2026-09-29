@@ -2,6 +2,8 @@
 
 import { useId, useMemo } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { localizeTimeLabel } from "@/lib/i18n/labels";
+import { useI18n } from "@/lib/i18n/provider";
 import type { TimeSeriesPoint } from "@/types";
 import { CHART, SEGMENT_COLORS } from "./chart-theme";
 import { ChartTooltipCard } from "./chart-tooltip";
@@ -30,8 +32,10 @@ function DashedCursor({ points, top = 0, height = 0 }: CursorProps) {
  * Single-series scans chart. The multi-colored segments are a decorative
  * signature of the Figma design (color does not encode data here).
  */
-export function ScansLineChart({ data, metric = "total", height = 240, label }: ScansLineChartProps) {
+export function ScansLineChart({ data: raw, metric = "total", height = 240, label }: ScansLineChartProps) {
   const gradientId = useId().replace(/:/g, "");
+  const { t, locale } = useI18n();
+  const data = useMemo(() => raw.map((p) => ({ ...p, label: localizeTimeLabel(p.label, locale) })), [raw, locale]);
   const peakIndex = useMemo(
     () => data.reduce((best, p, i) => (p[metric] > data[best][metric] ? i : best), 0),
     [data, metric],
@@ -79,7 +83,7 @@ export function ScansLineChart({ data, metric = "total", height = 240, label }: 
               active && payload?.length ? (
                 <ChartTooltipCard
                   label={String(l)}
-                  rows={[{ name: metric === "total" ? "Total scans" : "Unique scans", value: Number(payload[0].value) }]}
+                  rows={[{ name: metric === "total" ? t.analytics.totalScans : t.analytics.uniqueScans, value: Number(payload[0].value) }]}
                 />
               ) : null
             }

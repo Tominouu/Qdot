@@ -5,21 +5,26 @@ import { PrivacySettings } from "@/components/settings/privacy-settings";
 import { SETTINGS_SECTIONS } from "@/components/settings/sections";
 import { SettingsNav } from "@/components/settings/settings-nav";
 import { EmptyState } from "@/components/ui/empty-state";
+import { getDictionary } from "@/lib/i18n/server";
 
 export async function generateMetadata(props: PageProps<"/settings/[section]">): Promise<Metadata> {
   const { section } = await props.params;
-  return { title: SETTINGS_SECTIONS.find((s) => s.slug === section)?.label ?? "Settings" };
+  const t = await getDictionary();
+  const current = SETTINGS_SECTIONS.find((s) => s === section);
+  return { title: current ? t.settings.sections[current] : t.meta.settings };
 }
 
 export default async function SettingsSectionPage(props: PageProps<"/settings/[section]">) {
   const { section } = await props.params;
-  const current = SETTINGS_SECTIONS.find((s) => s.slug === section);
+  const current = SETTINGS_SECTIONS.find((s) => s === section);
   if (!current) notFound();
+  const t = await getDictionary();
+  const label = t.settings.sections[current];
 
   return (
     <div className="flex flex-col gap-8 lg:flex-row lg:gap-10">
       <SettingsNav />
-      {current.slug === "privacy" ? (
+      {current === "privacy" ? (
         <PrivacySettings />
       ) : (
         // Only "Privacy & Data" is designed; other sections share a neutral placeholder.
@@ -30,8 +35,8 @@ export default async function SettingsSectionPage(props: PageProps<"/settings/[s
               <Settings className="size-5" aria-hidden />
             </span>
           }
-          title={current.label}
-          description={`${current.label} settings aren't available in this preview yet.`}
+          title={label}
+          description={t.settings.unavailable(label)}
         />
       )}
     </div>

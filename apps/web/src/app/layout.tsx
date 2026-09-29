@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Geist, Geist_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
+import { I18nProvider } from "@/lib/i18n/provider";
+import { getDictionary, getLocale } from "@/lib/i18n/server";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -19,27 +21,32 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Qdot — QR codes, beautifully done",
-    template: "%s · Qdot",
-  },
-  description:
-    "Open-source dynamic QR codes. Create, customize and track every scan while keeping control of your data.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getDictionary();
+  return {
+    title: {
+      default: t.meta.title,
+      template: "%s · Qdot",
+    },
+    description: t.meta.description,
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#18181b",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const locale = await getLocale();
   return (
     <html
-      lang="en"
+      lang={locale}
       className={`${archivo.variable} ${geist.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">
-        <ToastProvider>{children}</ToastProvider>
+        <I18nProvider locale={locale}>
+          <ToastProvider>{children}</ToastProvider>
+        </I18nProvider>
       </body>
     </html>
   );

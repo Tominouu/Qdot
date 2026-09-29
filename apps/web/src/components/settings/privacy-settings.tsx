@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/toast";
 import { getPrivacySettings, updatePrivacySettings } from "@/lib/api/settings";
 import { useResource } from "@/lib/hooks/use-resource";
+import { useI18n } from "@/lib/i18n/provider";
 import type { PrivacySettings as Settings } from "@/types";
 
 function SettingRow({ title, description, control, id }: { title: string; description: ReactNode; control: ReactNode; id: string }) {
@@ -28,44 +29,46 @@ function SettingRow({ title, description, control, id }: { title: string; descri
 export function PrivacySettings() {
   const { data, setData } = useResource(getPrivacySettings, []);
   const { toast } = useToast();
+  const { t } = useI18n();
+  const p = t.settings.privacy;
 
   const save = async (patch: Partial<Settings>) => {
     if (!data) return;
     setData({ ...data, ...patch }); // optimistic
     try {
       setData(await updatePrivacySettings(patch));
-      toast("Privacy settings saved", "info");
+      toast(p.saved, "info");
     } catch {
       setData(data);
-      toast("Could not save settings", "warning");
+      toast(p.failed, "warning");
     }
   };
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-8">
       <div className="flex flex-col gap-2">
-        <h1 className="font-display text-[28px] leading-tight font-black text-fg md:text-[32px]">Privacy &amp; Data</h1>
-        <p className="text-[15px] text-muted">Control how scan data is collected and stored</p>
+        <h1 className="font-display text-[28px] leading-tight font-black text-fg md:text-[32px]">{p.title}</h1>
+        <p className="text-[15px] text-muted">{p.description}</p>
       </div>
 
       {data ? (
         <div className="flex flex-col gap-6">
           <SettingRow
             id="track-scans"
-            title="Track scans"
-            description="Record scan events for analytics"
-            control={<Switch label="Track scans" checked={data.trackScans} onCheckedChange={(v) => save({ trackScans: v })} />}
+            title={p.trackScans}
+            description={p.trackScansHint}
+            control={<Switch label={p.trackScans} checked={data.trackScans} onCheckedChange={(v) => save({ trackScans: v })} />}
           />
           <SettingRow
             id="store-ip"
-            title="Store IP addresses"
-            description="Save visitor IP addresses with scan data"
-            control={<Switch label="Store IP addresses" checked={data.storeIpAddresses} onCheckedChange={(v) => save({ storeIpAddresses: v })} />}
+            title={p.storeIp}
+            description={p.storeIpHint}
+            control={<Switch label={p.storeIp} checked={data.storeIpAddresses} onCheckedChange={(v) => save({ storeIpAddresses: v })} />}
           />
           <SettingRow
             id="geo"
-            title="Geolocation precision"
-            description="Limit the granularity of visitor location mapping"
+            title={p.geo}
+            description={p.geoHint}
             control={
               <Select
                 size="sm"
@@ -73,17 +76,17 @@ export function PrivacySettings() {
                 value={data.geolocationPrecision}
                 onChange={(e) => save({ geolocationPrecision: e.target.value as Settings["geolocationPrecision"] })}
                 options={[
-                  { value: "country", label: "Country-level" },
-                  { value: "region", label: "Region-level" },
-                  { value: "city", label: "City-level" },
+                  { value: "country", label: p.geoCountry },
+                  { value: "region", label: p.geoRegion },
+                  { value: "city", label: p.geoCity },
                 ]}
               />
             }
           />
           <SettingRow
             id="retention"
-            title="Data retention"
-            description="Automatically purge scan history logs after duration"
+            title={p.retention}
+            description={p.retentionHint}
             control={
               <Select
                 size="sm"
@@ -91,22 +94,22 @@ export function PrivacySettings() {
                 value={String(data.dataRetentionDays)}
                 onChange={(e) => save({ dataRetentionDays: Number(e.target.value) as Settings["dataRetentionDays"] })}
                 options={[
-                  { value: "30", label: "30 days" },
-                  { value: "90", label: "90 days" },
-                  { value: "365", label: "1 year" },
+                  { value: "30", label: p.days(30) },
+                  { value: "90", label: p.days(90) },
+                  { value: "365", label: p.year },
                 ]}
               />
             }
           />
           <SettingRow
             id="cookies"
-            title="Cookie consent"
+            title={p.cookies}
             description={
               <>
-                Require cookie consent banner. <span className="text-cyan">Not required — Qdot works without cookies</span>
+                {p.cookiesHint} <span className="text-cyan">{p.cookiesNote}</span>
               </>
             }
-            control={<Switch label="Cookie consent" checked={data.cookieConsent} onCheckedChange={(v) => save({ cookieConsent: v })} />}
+            control={<Switch label={p.cookies} checked={data.cookieConsent} onCheckedChange={(v) => save({ cookieConsent: v })} />}
           />
         </div>
       ) : (
@@ -122,17 +125,15 @@ export function PrivacySettings() {
           <Shield className="size-5 fill-fg-strong text-fg-strong" />
         </span>
         <div className="flex flex-col gap-1">
-          <p className="font-display text-base font-bold text-fg">Privacy by design</p>
-          <p className="text-sm text-muted">
-            Qdot is designed to respect user privacy. No personal data is collected by default. Self-host for complete data sovereignty.
-          </p>
+          <p className="font-display text-base font-bold text-fg">{p.byDesign}</p>
+          <p className="text-sm text-muted">{p.byDesignText}</p>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Pill>GDPR Compliant</Pill>
-        <Pill>CCPA Compliant</Pill>
-        <Pill tone="muted">No-Cookies tracking</Pill>
+        <Pill>{p.gdpr}</Pill>
+        <Pill>{p.ccpa}</Pill>
+        <Pill tone="muted">{p.noCookies}</Pill>
       </div>
     </div>
   );

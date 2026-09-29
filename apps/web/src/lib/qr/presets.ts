@@ -11,19 +11,10 @@ export const DEFAULT_QR_STYLE: QRStyle = {
   logo: null,
 };
 
-export const PATTERN_OPTIONS: { value: QRPattern; label: string }[] = [
-  { value: "squares", label: "Squares" },
-  { value: "dots", label: "Dots" },
-  { value: "rounded", label: "Rounded" },
-  { value: "diamond", label: "Diamond" },
-];
+/** Labels live in the `editor.patterns` / `editor.eyes` dictionaries. */
+export const PATTERN_OPTIONS: QRPattern[] = ["squares", "dots", "rounded", "diamond"];
 
-export const EYE_OPTIONS: { value: QREyeShape; label: string }[] = [
-  { value: "classic", label: "Classic" },
-  { value: "rounded", label: "Rounded" },
-  { value: "leaf", label: "Leaf" },
-  { value: "innerDot", label: "InnerDot" },
-];
+export const EYE_OPTIONS: QREyeShape[] = ["classic", "rounded", "leaf", "innerDot"];
 
 /** Style presets shown in the landing "Beautiful customization" section. */
 export const SHOWCASE_PRESETS: { name: string; style: QRStyle }[] = [

@@ -1,7 +1,8 @@
 import { ChartLine, House, LayoutDashboard, MegaphoneOff, QrCode, Settings, type LucideIcon } from "lucide-react";
 
 export interface NavItem {
-  label: string;
+  /** Key in the `nav` dictionary. */
+  label: "dashboard" | "home" | "qrCodes" | "analytics" | "campaigns" | "settings";
   href: string;
   /** Route prefix that marks the item active. */
   match: string;
@@ -9,22 +10,22 @@ export interface NavItem {
 }
 
 export const SIDEBAR_NAV: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", match: "/dashboard", icon: LayoutDashboard },
-  { label: "QR Codes", href: "/qr-codes", match: "/qr-codes", icon: QrCode },
-  { label: "Analytics", href: "/analytics", match: "/analytics", icon: ChartLine },
-  { label: "Campaigns", href: "/campaigns", match: "/campaigns", icon: MegaphoneOff },
-  { label: "Settings", href: "/settings", match: "/settings", icon: Settings },
+  { label: "dashboard", href: "/dashboard", match: "/dashboard", icon: LayoutDashboard },
+  { label: "qrCodes", href: "/qr-codes", match: "/qr-codes", icon: QrCode },
+  { label: "analytics", href: "/analytics", match: "/analytics", icon: ChartLine },
+  { label: "campaigns", href: "/campaigns", match: "/campaigns", icon: MegaphoneOff },
+  { label: "settings", href: "/settings", match: "/settings", icon: Settings },
 ];
 
 /** Bottom tab bar from the mobile frames; the center slot is the create FAB. */
 export const MOBILE_TABS: { left: NavItem[]; right: NavItem[] } = {
   left: [
-    { label: "Home", href: "/dashboard", match: "/dashboard", icon: House },
-    { label: "QR Codes", href: "/qr-codes", match: "/qr-codes", icon: QrCode },
+    { label: "home", href: "/dashboard", match: "/dashboard", icon: House },
+    { label: "qrCodes", href: "/qr-codes", match: "/qr-codes", icon: QrCode },
   ],
   right: [
-    { label: "Analytics", href: "/analytics", match: "/analytics", icon: ChartLine },
-    { label: "Settings", href: "/settings", match: "/settings", icon: Settings },
+    { label: "analytics", href: "/analytics", match: "/analytics", icon: ChartLine },
+    { label: "settings", href: "/settings", match: "/settings", icon: Settings },
   ],
 };
 

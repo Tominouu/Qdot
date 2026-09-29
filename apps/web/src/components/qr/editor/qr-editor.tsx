@@ -7,9 +7,11 @@ import { useRef, useState } from "react";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
-import { ApiError, isUnauthenticated } from "@/lib/api/client";
+import { isUnauthenticated } from "@/lib/api/client";
 import { createQRCode, updateQRCode } from "@/lib/api/qr";
 import { clearSession, getSession } from "@/lib/auth/session";
+import { errorMessage } from "@/lib/i18n/errors";
+import { useI18n } from "@/lib/i18n/provider";
 import { savePendingQR } from "@/lib/onboarding/pending-qr";
 import { DestinationPanel, StylePanels, TypePanel } from "./editor-panels";
 import { QRPreviewCard } from "./qr-preview-card";
@@ -24,6 +26,8 @@ interface QREditorProps {
 export function QREditor({ initial, existingId }: QREditorProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useI18n();
+  const e = t.editor;
   const ctrl = useQRDraft(initial);
   const { draft, destination, inputError, payload, payloadIsFinal, scannability } = ctrl;
   const [phoneMockup, setPhoneMockup] = useState(false);
@@ -56,14 +60,14 @@ export function QREditor({ initial, existingId }: QREditorProps) {
   };
 
   const fail = (err: unknown, fallback: string) => {
-    toast(err instanceof ApiError && err.status !== 500 ? err.message : fallback, "warning");
+    toast(errorMessage(err, t, fallback), "warning");
     setPending(null);
   };
 
   const submit = async () => {
     ctrl.touch();
     if (inputError || !destination) {
-      toast(inputError ?? "Add a destination first", "warning");
+      toast(inputError ?? e.addDestination, "warning");
       inputRef.current?.focus();
       return;
     }
@@ -72,7 +76,7 @@ export function QREditor({ initial, existingId }: QREditorProps) {
     try {
       if (existingId) {
         await updateQRCode(existingId, { ...baseInput(), destinationUrl: destination });
-        toast("Changes saved — printed codes now resolve to the new destination", "info");
+        toast(e.changesSaved, "info");
         router.push(`/qr-codes/${existingId}`);
       } else {
         const qr = await createQRCode({ ...baseInput(), type: "url", destinationUrl: destination, status: "active" });
@@ -85,14 +89,14 @@ export function QREditor({ initial, existingId }: QREditorProps) {
         router.push(`/sign-in?next=${encodeURIComponent(`/qr-codes/${existingId}/edit`)}`);
         return;
       }
-      fail(err, "Something went wrong. Please try again.");
+      fail(err, t.common.somethingWrong);
     }
   };
 
   const saveDraft = async () => {
     if (!destination) {
       ctrl.touch();
-      toast("Add a valid destination to save a draft", "warning");
+      toast(e.addValidDestination, "warning");
       inputRef.current?.focus();
       return;
     }
@@ -100,20 +104,20 @@ export function QREditor({ initial, existingId }: QREditorProps) {
     setPending("draft");
     try {
       await createQRCode({ ...baseInput(), type: "url", destinationUrl: destination, status: "draft" });
-      toast("Draft saved", "info");
+      toast(e.draftSaved, "info");
       router.push("/qr-codes");
     } catch (err) {
       if (isUnauthenticated(err)) {
         clearSession();
         return continueToAccount(destination, "draft");
       }
-      fail(err, "Could not save draft");
+      fail(err, e.couldNotSaveDraft);
     }
   };
 
-  const primaryLabel = editing ? "Save changes" : "Create QR code";
-  const busyLabel = editing ? "Saving…" : "Creating…";
-  const title = editing ? draft.name || "Edit QR code" : "New QR Code";
+  const primaryLabel = editing ? t.common.saveChanges : e.create;
+  const busyLabel = editing ? t.common.saving : e.creating;
+  const title = editing ? draft.name || e.editTitle : e.newTitle;
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -121,19 +125,19 @@ export function QREditor({ initial, existingId }: QREditorProps) {
       <header className="sticky top-0 z-20 hidden items-center justify-between gap-4 border-b border-line bg-bg/95 px-6 py-4 backdrop-blur md:flex">
         <Breadcrumb
           items={[
-            { label: "QR Codes", href: "/qr-codes" },
-            ...(editing ? [{ label: draft.name || "QR code", href: `/qr-codes/${existingId}` }, { label: "Edit" }] : [{ label: title }]),
+            { label: t.nav.qrCodes, href: "/qr-codes" },
+            ...(editing ? [{ label: draft.name || e.qrCode, href: `/qr-codes/${existingId}` }, { label: t.common.edit }] : [{ label: title }]),
           ]}
           className="[&_a]:text-faint"
         />
         <div className="flex items-center gap-3">
           {editing ? (
             <Button variant="neutral" className="h-[42px]" onClick={() => router.push(`/qr-codes/${existingId}`)} disabled={pending !== null}>
-              Cancel
+              {t.common.cancel}
             </Button>
           ) : (
             <Button variant="neutral" className="h-[42px]" onClick={saveDraft} disabled={pending !== null}>
-              {pending === "draft" ? "Saving…" : "Save draft"}
+              {pending === "draft" ? t.common.saving : e.saveDraft}
             </Button>
           )}
           <Button className="h-[42px]" onClick={submit} disabled={pending !== null}>
@@ -144,13 +148,13 @@ export function QREditor({ initial, existingId }: QREditorProps) {
 
       {/* Mobile top bar (mobile-qr-creator frame) */}
       <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-line bg-sidebar/95 px-4 py-3.5 backdrop-blur md:hidden">
-        <Link href={editing ? `/qr-codes/${existingId}` : "/qr-codes"} aria-label="Back" className="-ml-1 rounded-md p-1 text-fg">
+        <Link href={editing ? `/qr-codes/${existingId}` : "/qr-codes"} aria-label={t.common.back} className="-ml-1 rounded-md p-1 text-fg">
           <ArrowLeft className="size-5" />
         </Link>
-        <h1 className="font-display text-xl font-extrabold text-fg">{editing ? "Edit QR code" : "Create QR code"}</h1>
+        <h1 className="font-display text-xl font-extrabold text-fg">{editing ? e.editTitle : e.createTitle}</h1>
         {!editing && (
           <button type="button" onClick={saveDraft} disabled={pending !== null} className="ml-auto text-[13px] font-semibold text-muted hover:text-fg">
-            Save draft
+            {e.saveDraft}
           </button>
         )}
       </header>
@@ -162,7 +166,7 @@ export function QREditor({ initial, existingId }: QREditorProps) {
         </aside>
 
         <section
-          aria-label="Live preview"
+          aria-label={e.livePreview}
           className="order-1 flex justify-center bg-sidebar px-4 py-8 md:bg-bg md:py-10 lg:order-2 lg:items-start lg:pt-10"
         >
           <div className="md:hidden">

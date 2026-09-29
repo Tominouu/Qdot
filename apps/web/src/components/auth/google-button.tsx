@@ -1,5 +1,8 @@
+"use client";
+
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n/provider";
 
 /** Google "G" brand mark (official four-color glyph). */
 function GoogleMark() {
@@ -14,6 +17,7 @@ function GoogleMark() {
 }
 
 export function GoogleButton({ loading, disabled, onClick }: { loading: boolean; disabled?: boolean; onClick: () => void }) {
+  const { t } = useI18n();
   return (
     <Button
       variant="neutral"
@@ -23,7 +27,7 @@ export function GoogleButton({ loading, disabled, onClick }: { loading: boolean;
       aria-busy={loading}
       leadingIcon={loading ? <Loader2 className="size-[18px] animate-spin" aria-hidden /> : <GoogleMark />}
     >
-      {loading ? "Connecting to Google…" : "Continue with Google"}
+      {loading ? t.auth.connectingGoogle : t.auth.continueGoogle}
     </Button>
   );
 }

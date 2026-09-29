@@ -2,6 +2,7 @@
 
 import { useMemo, useReducer } from "react";
 import { previewShortUrl } from "@/lib/config";
+import { useI18n } from "@/lib/i18n/provider";
 import { contentTypeConfig } from "@/lib/qr/content-types";
 import { DEFAULT_QR_STYLE } from "@/lib/qr/presets";
 import { checkScannability } from "@/lib/qr/scannability";
@@ -79,9 +80,10 @@ export function initialDraft(opts: {
 export function useQRDraft(initial: QRDraft) {
   const [draft, dispatch] = useReducer(reducer, initial);
   const config = contentTypeConfig(draft.type);
+  const { t } = useI18n();
 
   const derived = useMemo(() => {
-    const inputError = config.validate(draft.input);
+    const inputError = config.validate(draft.input, t);
     return {
       payload: draft.shortUrl ?? previewShortUrl(draft.previewCode),
       /** False until the API has assigned the code (new QR codes). */
@@ -90,7 +92,7 @@ export function useQRDraft(initial: QRDraft) {
       inputError,
       scannability: checkScannability(draft.style),
     };
-  }, [config, draft.input, draft.previewCode, draft.shortUrl, draft.style]);
+  }, [config, t, draft.input, draft.previewCode, draft.shortUrl, draft.style]);
 
   return {
     draft,

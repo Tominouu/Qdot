@@ -3,16 +3,17 @@
 import { Smartphone } from "lucide-react";
 import { StyledQR } from "@/components/qr/styled-qr";
 import { Switch } from "@/components/ui/switch";
+import { useI18n } from "@/lib/i18n/provider";
 import type { Scannability } from "@/lib/qr/scannability";
 import { cn } from "@/lib/utils/cn";
 import { stripProtocol } from "@/lib/utils/format";
 import type { QRStyle } from "@/types";
 
-const STATUS: Record<Scannability, { label: string; dot: string }> = {
-  scannable: { label: "✓ Scannable", dot: "bg-success" },
-  "low-contrast": { label: "Low contrast — may not scan", dot: "bg-warning" },
-  "invalid-color": { label: "Invalid color", dot: "bg-danger" },
-  "sparse-logo": { label: "Logo + this pattern may scan poorly", dot: "bg-warning" },
+const STATUS_DOT: Record<Scannability, string> = {
+  scannable: "bg-success",
+  "low-contrast": "bg-warning",
+  "invalid-color": "bg-danger",
+  "sparse-logo": "bg-warning",
 };
 
 interface QRPreviewCardProps {
@@ -28,7 +29,8 @@ interface QRPreviewCardProps {
 }
 
 export function QRPreviewCard({ payload, payloadIsFinal, style, scannability, destination, phoneMockup, onPhoneMockupChange, compact }: QRPreviewCardProps) {
-  const status = STATUS[scannability];
+  const { t } = useI18n();
+  const pv = t.editor.preview;
 
   const card = (
     <div
@@ -40,11 +42,11 @@ export function QRPreviewCard({ payload, payloadIsFinal, style, scannability, de
       style={{ background: style.background }}
     >
       <div className={cn("w-full transition-[max-width] duration-300", compact ? "max-w-[180px]" : phoneMockup ? "max-w-[200px]" : "max-w-[320px]")}>
-        <StyledQR value={payload} style={style} title={`Live preview, encodes ${payload}`} />
+        <StyledQR value={payload} style={style} title={pv.encodesTitle(payload)} />
       </div>
       <p className="flex items-center gap-2 rounded-full text-[13px] font-semibold text-fg-strong" role="status" aria-live="polite">
-        <span className={cn("size-2 rounded-full", status.dot)} aria-hidden />
-        {status.label}
+        <span className={cn("size-2 rounded-full", STATUS_DOT[scannability])} aria-hidden />
+        {t.editor.status[scannability]}
       </p>
     </div>
   );
@@ -56,7 +58,7 @@ export function QRPreviewCard({ payload, payloadIsFinal, style, scannability, de
           <span className="absolute top-3 left-1/2 h-5 w-20 -translate-x-1/2 rounded-full bg-[#0b0b0f]" aria-hidden />
           {card}
           <p className="mt-4 truncate px-2 text-center text-[11px] text-muted" title={destination ?? undefined}>
-            Opens {destination ? stripProtocol(destination) : "your destination"}
+            {pv.opens} {destination ? stripProtocol(destination) : pv.yourDestination}
           </p>
         </div>
       ) : (
@@ -66,15 +68,15 @@ export function QRPreviewCard({ payload, payloadIsFinal, style, scannability, de
       <p className="max-w-[384px] text-center text-xs text-subtle">
         {payloadIsFinal ? (
           <>
-            Encodes <span className="font-mono text-muted-2">{stripProtocol(payload)}</span>
+            {pv.encodes} <span className="font-mono text-muted-2">{stripProtocol(payload)}</span>
           </>
         ) : (
-          "Your Qdot short link is assigned when you save"
+          pv.assignedOnSave
         )}
         {destination && (
           <>
             {" "}
-            → redirects to <span className="break-all text-muted-2">{stripProtocol(destination)}</span>
+            {pv.redirectsTo} <span className="break-all text-muted-2">{stripProtocol(destination)}</span>
           </>
         )}
       </p>
@@ -82,9 +84,9 @@ export function QRPreviewCard({ payload, payloadIsFinal, style, scannability, de
       {!compact && (
         <div className="flex items-center gap-2.5 rounded-full border border-line bg-surface px-4 py-2.5">
           <Smartphone className="size-4 text-muted-2" aria-hidden />
-          <span className="text-[13px] text-muted-2">Preview on phone mockup</span>
+          <span className="text-[13px] text-muted-2">{pv.phoneMockup}</span>
           <span className="h-px w-3 bg-line" aria-hidden />
-          <Switch size="sm" tone="accent" label="Preview on phone mockup" checked={phoneMockup} onCheckedChange={onPhoneMockupChange} />
+          <Switch size="sm" tone="accent" label={pv.phoneMockup} checked={phoneMockup} onCheckedChange={onPhoneMockupChange} />
         </div>
       )}
     </div>

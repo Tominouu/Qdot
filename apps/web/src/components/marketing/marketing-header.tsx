@@ -5,17 +5,21 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/layout/logo";
 import { ButtonLink } from "@/components/ui/button";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
+import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils/cn";
 
+/** Section anchors live on the landing page; from other pages (legal) they navigate back to it. */
 const NAV = [
-  { label: "Features", href: "#features" },
-  { label: "Pricing", href: "#open-source" },
-  { label: "Docs", href: "#flow" },
-  { label: "GitHub", href: "https://github.com" },
-];
+  { key: "features", href: "/#features" },
+  { key: "pricing", href: "/#open-source" },
+  { key: "docs", href: "/#flow" },
+  { key: "github", href: "https://github.com" },
+] as const;
 
 export function MarketingHeader() {
   const [open, setOpen] = useState(false);
+  const { t } = useI18n();
 
   useEffect(() => {
     if (!open) return;
@@ -28,28 +32,29 @@ export function MarketingHeader() {
     <header className="sticky top-0 z-40 border-b border-transparent bg-bg/85 backdrop-blur-md supports-[backdrop-filter]:bg-bg/70">
       <div className="mx-auto flex max-w-[1440px] items-center justify-between px-4 py-4 md:px-10 md:py-5 xl:px-20">
         <Logo />
-        <nav aria-label="Primary" className="hidden md:block">
+        <nav aria-label={t.nav.primary} className="hidden md:block">
           <ul className="flex items-center gap-8 text-sm font-medium text-muted">
             {NAV.map((n) => (
-              <li key={n.label}>
+              <li key={n.key}>
                 <a href={n.href} className="transition-colors hover:text-fg">
-                  {n.label}
+                  {t.marketing.nav[n.key]}
                 </a>
               </li>
             ))}
           </ul>
         </nav>
         <div className="hidden items-center gap-4 md:flex">
+          <LanguageSwitcher />
           <Link href="/sign-in" className="text-sm font-medium text-fg transition-colors hover:text-white">
-            Sign in
+            {t.marketing.signIn}
           </Link>
           <ButtonLink href="/onboarding" className="h-[42px] text-white">
-            Get started
+            {t.marketing.getStarted}
           </ButtonLink>
         </div>
         <button
           type="button"
-          aria-label={open ? "Close menu" : "Open menu"}
+          aria-label={open ? t.marketing.closeMenu : t.marketing.openMenu}
           aria-expanded={open}
           aria-controls="mobile-menu"
           onClick={() => setOpen((o) => !o)}
@@ -65,19 +70,20 @@ export function MarketingHeader() {
       >
         <ul className="flex flex-col">
           {NAV.map((n) => (
-            <li key={n.label}>
+            <li key={n.key}>
               <a href={n.href} onClick={() => setOpen(false)} className="block py-3 text-base font-medium text-muted hover:text-fg">
-                {n.label}
+                {t.marketing.nav[n.key]}
               </a>
             </li>
           ))}
         </ul>
         <div className="mt-4 grid grid-cols-2 gap-3">
           <ButtonLink href="/sign-in" variant="neutral">
-            Sign in
+            {t.marketing.signIn}
           </ButtonLink>
-          <ButtonLink href="/onboarding">Get started</ButtonLink>
+          <ButtonLink href="/onboarding">{t.marketing.getStarted}</ButtonLink>
         </div>
+        <LanguageSwitcher className="mt-4" />
       </div>
     </header>
   );

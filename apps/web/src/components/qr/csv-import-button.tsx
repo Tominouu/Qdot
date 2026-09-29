@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { createQRCode } from "@/lib/api/qr";
+import { useI18n } from "@/lib/i18n/provider";
 import { DEFAULT_QR_STYLE } from "@/lib/qr/presets";
 
 /** Parses `name,url` rows (header optional) and creates one QR code per row. */
@@ -19,6 +20,7 @@ export function CsvImportButton({ onImported }: { onImported: () => void }) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const { toast } = useToast();
+  const { t } = useI18n();
 
   return (
     <>
@@ -35,7 +37,7 @@ export function CsvImportButton({ onImported }: { onImported: () => void }) {
           if (!file) return;
           const rows = parseCsv(await file.text());
           if (!rows.length) {
-            toast("No valid rows found. Expected: name,url", "warning");
+            toast(t.library.csv.noRows, "warning");
             return;
           }
           setBusy(true);
@@ -43,12 +45,12 @@ export function CsvImportButton({ onImported }: { onImported: () => void }) {
             await createQRCode({ name: row.name, destinationUrl: row.url, type: "url", category: "website", style: DEFAULT_QR_STYLE });
           }
           setBusy(false);
-          toast(`Imported ${rows.length} QR code${rows.length > 1 ? "s" : ""}`);
+          toast(t.library.csv.imported(rows.length));
           onImported();
         }}
       />
       <Button variant="secondary" size="md" className="h-[42px] border-line text-muted-2" disabled={busy} onClick={() => input.current?.click()}>
-        {busy ? "Importing…" : "Import from CSV"}
+        {busy ? t.library.csv.importing : t.library.csv.import}
       </Button>
     </>
   );

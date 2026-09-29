@@ -1,25 +1,33 @@
+"use client";
+
+import { countryName, localizeShareLabel } from "@/lib/i18n/labels";
+import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils/cn";
+import { formatNumber } from "@/lib/utils/format";
 import type { ShareItem } from "@/types";
 
 const FILL_OPACITY = [0.8, 0.5, 0.4, 0.3, 0.2];
 
 /** Label + % + thin bar rows (Geography list, mobile "Top Locations"). */
-export function ShareBars({ items, className, showCount }: { items: ShareItem[]; className?: string; showCount?: boolean }) {
+export function ShareBars({ items, className, showCount }: { items: (ShareItem & { countryCode?: string })[]; className?: string; showCount?: boolean }) {
+  const { t, locale } = useI18n();
+  const labelOf = (item: ShareItem & { countryCode?: string }) =>
+    item.countryCode && item.countryCode !== "XX" ? countryName(item.countryCode, item.label, locale) : localizeShareLabel(item.label, t);
   return (
     <ul className={cn("flex flex-col gap-3", className)}>
       {items.map((item, i) => (
         <li key={item.label} className="flex flex-col gap-1">
           <div className="flex items-baseline justify-between gap-3 text-[13px]">
-            <span className="text-fg-strong">{item.label}</span>
+            <span className="text-fg-strong">{labelOf(item)}</span>
             <span className="text-subtle tabular-nums">
-              {showCount && item.count !== undefined ? `${item.count.toLocaleString("en-US")} · ` : ""}
+              {showCount && item.count !== undefined ? `${formatNumber(item.count, locale)} · ` : ""}
               {item.share}%
             </span>
           </div>
           <div
             className="h-1.5 overflow-hidden rounded-[3px] bg-line"
             role="meter"
-            aria-label={`${item.label} share`}
+            aria-label={t.analytics.share(labelOf(item))}
             aria-valuenow={item.share}
             aria-valuemin={0}
             aria-valuemax={100}
