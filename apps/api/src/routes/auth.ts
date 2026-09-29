@@ -6,7 +6,9 @@ import type { FastifyInstance } from "fastify";
 import type { Env } from "../env";
 import { AppError, isUniqueViolation, parse, unauthenticated } from "../lib/errors";
 import { clearSessionCookie, readSessionToken, setSessionCookie } from "../plugins/auth";
+import { acceptInvitation, assertUsable, findInvitation } from "../services/invitations";
 import { createSession, deleteSession } from "../services/sessions";
+import { createPersonalWorkspace } from "../services/workspaces";
 
 /** Login/register: 10 attempts per minute per IP. */
 const authRateLimit = { rateLimit: { max: 10, timeWindow: "1 minute" } };
@@ -28,13 +30,21 @@ const getDummyHash = () => (dummyHash ??= argon2.hash("qdot-timing-equalizer"));
 export async function authRoutes(app: FastifyInstance, { db, env }: { db: Database; env: Env }) {
   app.post("/auth/register", { config: authRateLimit }, async (request, reply) => {
     const input = parse(RegisterSchema, request.body);
+    // Fail fast on a bad invitation, before creating anything.
+    if (input.invitationToken) assertUsable((await findInvitation(db, input.invitationToken)).invitation, input.email);
     const passwordHash = await argon2.hash(input.password, { type: argon2.argon2id });
     let user: UserRow;
     try {
-      [user] = await db
-        .insert(users)
-        .values({ email: input.email, passwordHash, name: input.name || nameFromEmail(input.email) })
-        .returning();
+      // Account, its Personal workspace and (if invited) the team membership: all or nothing.
+      user = await db.transaction(async (tx) => {
+        const [created] = await tx
+          .insert(users)
+          .values({ email: input.email, passwordHash, name: input.name || nameFromEmail(input.email) })
+          .returning();
+        await createPersonalWorkspace(tx, created.id);
+        if (input.invitationToken) await acceptInvitation(tx, input.invitationToken, created);
+        return created;
+      });
     } catch (err) {
       if (isUniqueViolation(err)) throw new AppError(409, "EMAIL_TAKEN", "An account with this email already exists.");
       throw err;

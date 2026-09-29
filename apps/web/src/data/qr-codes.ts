@@ -12,7 +12,7 @@ const DEFAULT_QR_STYLE: QRStyle = {
 };
 
 /** A code as stored before the designer: v1 `style`, no content/mode. */
-type LegacyMockQR = Omit<QRCode, "design" | "mode" | "content" | "contentRedacted" | "destinationUrl"> & { destinationUrl: string; style: QRStyle };
+type LegacyMockQR = Omit<QRCode, "design" | "mode" | "content" | "contentRedacted" | "destinationUrl" | "workspaceId"> & { destinationUrl: string; style: QRStyle };
 
 /**
  * Brings any stored mock code (v1 fixtures, localStorage from older versions,
@@ -25,6 +25,8 @@ export function upgradeMockQR(stored: QRCode | LegacyMockQR): QRCode {
   const content = raw.content ?? { type: "url" as const, url: raw.destinationUrl ?? "" };
   return {
     ...(rest as QRCode),
+    // Codes saved before workspaces belonged to the personal space.
+    workspaceId: raw.workspaceId ?? "ws_personal",
     type: content.type,
     mode,
     content,
@@ -183,6 +185,7 @@ const LEGACY_FIXTURES: LegacyMockQR[] = [
 const STATIC_FIXTURES: QRCode[] = [
   {
     id: "qr_guest_wifi",
+    workspaceId: "ws_personal",
     code: "gw7k3p",
     shortUrl: mockShortUrl("gw7k3p"),
     name: "Guest Wi-Fi",

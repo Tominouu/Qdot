@@ -8,6 +8,8 @@ export const RegisterSchema = z.object({
   email,
   password: z.string().min(MIN_PASSWORD_LENGTH, `Use at least ${MIN_PASSWORD_LENGTH} characters`).max(256),
   name: z.string().trim().max(80).optional(),
+  /** Signing up from an invitation link: the new account joins that workspace. */
+  invitationToken: z.string().min(20).max(200).optional(),
 });
 export type RegisterInput = z.input<typeof RegisterSchema>;
 

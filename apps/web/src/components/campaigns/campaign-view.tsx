@@ -19,6 +19,7 @@ import { countryName } from "@/lib/i18n/labels";
 import { useI18n } from "@/lib/i18n/provider";
 import { formatDate, formatNumber } from "@/lib/utils/format";
 import type { QRCode } from "@/types";
+import { useCan } from "@/lib/workspace/provider";
 import { EditCampaignModal } from "./edit-campaign-modal";
 
 /** Emoji flag from an ISO 3166-1 alpha-2 code (regional indicator symbols). */
@@ -52,6 +53,8 @@ export function CampaignView({ id }: { id: string }) {
   const router = useRouter();
   const { t, locale } = useI18n();
   const c = t.campaigns;
+  const canWrite = useCan("campaign:write");
+  const canCreateQR = useCan("qr:write");
 
   if (res.error)
     return (
@@ -82,9 +85,11 @@ export function CampaignView({ id }: { id: string }) {
           ) : (
             <Skeleton className="h-16 w-96" />
           )}
+          {canWrite && (
           <Button variant="inverse" className="h-[42px] self-start md:self-auto" onClick={() => setEditing(true)} disabled={!detail}>
             {c.edit}
           </Button>
+          )}
         </div>
       </header>
 
@@ -118,6 +123,7 @@ export function CampaignView({ id }: { id: string }) {
         <SectionHeading
           title={c.qrCodes(String(detail?.qrCodes.length ?? "…"))}
           action={
+            canCreateQR && (
             <ButtonLink
               href={`/qr-codes/new?campaign=${id}`}
               variant="secondary"
@@ -126,6 +132,7 @@ export function CampaignView({ id }: { id: string }) {
             >
               {c.addQr}
             </ButtonLink>
+            )
           }
         />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 xl:grid-cols-4">

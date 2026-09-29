@@ -282,8 +282,8 @@ export async function qrCodeAnalytics(db: Database, qr: QRCodeRow, q: { range: T
   };
 }
 
-export async function workspaceAnalytics(db: Database, userId: string, q: { range: TimeRange; tz: string }): Promise<AnalyticsSummary> {
-  const owned = await rows<{ id: string; status: string }>(db, sql`select id, status from ${qrCodes} where user_id = ${userId}::uuid`);
+export async function workspaceAnalytics(db: Database, workspaceId: string, q: { range: TimeRange; tz: string }): Promise<AnalyticsSummary> {
+  const owned = await rows<{ id: string; status: string }>(db, sql`select id, status from ${qrCodes} where workspace_id = ${workspaceId}::uuid`);
   const activeCodes = owned.filter((o) => o.status === "active").length;
   if (!owned.length) {
     const e = emptyAnalytics(q.range);

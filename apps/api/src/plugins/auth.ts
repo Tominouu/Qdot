@@ -38,6 +38,7 @@ export function readSessionToken(request: FastifyRequest): string | null {
 /** Resolves `request.user` from the session cookie on every request. */
 export function registerAuth(app: FastifyInstance, db: Database, env: Env) {
   app.decorateRequest("user", null);
+  app.decorateRequest("workspace", null);
   app.addHook("onRequest", async (request, reply) => {
     // Public scan redirects and health checks never need a session lookup.
     if (request.url.startsWith("/r/") || request.url === "/health") return;

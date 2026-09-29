@@ -13,6 +13,8 @@ import { contentSummary } from "@/lib/qr/types";
 import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils/cn";
 import type { QRStatus } from "@/types";
+import { ReadOnlyNotice } from "@/components/workspace/read-only-notice";
+import { useCan } from "@/lib/workspace/provider";
 import { CsvImportButton } from "./csv-import-button";
 import { EmptyQRVisual } from "./empty-qr-visual";
 import { QRCard, QRCardSkeleton, QRRow } from "./qr-card";
@@ -25,6 +27,7 @@ export function QRLibrary() {
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [view, setView] = useState<View>("grid");
+  const canWrite = useCan("qr:write");
   const { t } = useI18n();
   const l = t.library;
 
@@ -53,12 +56,14 @@ export function QRLibrary() {
         title={l.emptyTitle}
         description={l.emptyDescription}
         actions={
+          canWrite && (
           <>
             <ButtonLink href="/onboarding" variant="inverse" className="h-[42px] min-w-[153px]">
               {l.create}
             </ButtonLink>
             <CsvImportButton onImported={reload} />
           </>
+          )
         }
       />
     );
@@ -82,12 +87,16 @@ export function QRLibrary() {
                 className="h-[38px] rounded-lg text-[13px]"
               />
             </div>
+            {canWrite && (
             <ButtonLink href="/onboarding" className="hidden md:inline-flex">
               {l.create}
             </ButtonLink>
+            )}
           </>
         }
       />
+
+      <ReadOnlyNotice permission="qr:write" />
 
       <div className="flex items-center justify-between gap-4 border-b border-line pb-4">
         <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:px-0">
@@ -155,6 +164,7 @@ export function QRLibrary() {
         </>
       )}
 
+      {canWrite && (
       <ButtonLink
         href="/onboarding"
         className="fixed right-4 bottom-24 z-30 hidden h-auto rounded-full p-4 font-bold shadow-[0_8px_12px_rgba(232,80,58,0.45)] sm:flex lg:hidden"
@@ -162,6 +172,7 @@ export function QRLibrary() {
       >
         {l.create}
       </ButtonLink>
+      )}
     </div>
   );
 }

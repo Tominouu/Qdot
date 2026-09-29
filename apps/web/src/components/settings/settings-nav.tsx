@@ -4,6 +4,7 @@ import { LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSignOut } from "@/lib/auth/use-sign-out";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils/cn";
 import { SETTINGS_SECTIONS } from "./sections";
@@ -32,6 +33,9 @@ export function SettingsNav() {
             </li>
           );
         })}
+        <li className="flex items-center px-2 lg:hidden">
+          <LanguageSwitcher />
+        </li>
         <li className="lg:mt-4 lg:border-t lg:border-line lg:pt-4">
           <button
             type="button"

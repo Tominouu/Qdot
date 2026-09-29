@@ -3,7 +3,7 @@ import { USE_MOCK_API } from "@/lib/config";
 import { hashString, seededRandom } from "@/lib/utils/seeded-random";
 import type { AnalyticsSummary, QRCodeAnalytics, TimeRange } from "@/types";
 import { ApiError, apiRequest, browserTimeZone, toQuery } from "./client";
-import { delay, readStore } from "./mock-store";
+import { delay, mockWorkspaceId, readStore } from "./mock-store";
 
 const sparkline = (seed: number) => {
   const rand = seededRandom(seed);
@@ -14,7 +14,7 @@ const sparkline = (seed: number) => {
 export async function getAnalyticsSummary(range: TimeRange = "30d"): Promise<AnalyticsSummary> {
   if (!USE_MOCK_API) return apiRequest<AnalyticsSummary>(`/analytics${toQuery({ range, tz: browserTimeZone() })}`);
 
-  const codes = readStore().qrCodes;
+  const codes = readStore().qrCodes.filter((q) => q.workspaceId === mockWorkspaceId());
   const m = codes.some((c) => c.totalScans > 0) ? RANGE_MULTIPLIER[range] : 0;
   const totalScans = Math.round(48293 * m);
   const breakdown = mockBreakdown(totalScans);
@@ -36,7 +36,7 @@ export async function getQRCodeAnalytics(qrCodeId: string, range: TimeRange = "7
   if (!USE_MOCK_API)
     return apiRequest<QRCodeAnalytics>(`/qr/${encodeURIComponent(qrCodeId)}/analytics${toQuery({ range, tz: browserTimeZone() })}`);
 
-  const qr = readStore().qrCodes.find((q) => q.id === qrCodeId);
+  const qr = readStore().qrCodes.find((q) => q.id === qrCodeId && q.workspaceId === mockWorkspaceId());
   if (!qr) throw new ApiError("QR code not found", 404, "QR_NOT_FOUND");
   const seed = hashString(qr.id);
   const hasScans = qr.totalScans > 0;

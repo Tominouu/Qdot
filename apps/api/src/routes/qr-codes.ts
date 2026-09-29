@@ -6,8 +6,9 @@ import { z } from "zod";
 import type { Env } from "../env";
 import { AppError, isUniqueViolation, notFound, parse } from "../lib/errors";
 import { currentUser, requireUser } from "../plugins/auth";
+import { currentWorkspace, requirePermission } from "../plugins/workspace";
 import { qrCodeAnalytics } from "../services/analytics";
-import { generateCode, getOwnedQRCode, listQRCodesWithStats, toQRDTO } from "../services/qr-codes";
+import { generateCode, getWorkspaceQRCode, listQRCodesWithStats, toQRDTO } from "../services/qr-codes";
 import { sealContent } from "../services/qr-content";
 import type { SecretBox } from "../services/secrets";
 
@@ -16,23 +17,27 @@ const ListQuerySchema = z.object({
   search: z.string().trim().max(100).optional(),
 });
 
-async function assertCampaignOwned(db: Database, userId: string, campaignId: string | null | undefined) {
+/** A QR code can only join a campaign of its own workspace. */
+async function assertCampaignInWorkspace(db: Database, workspaceId: string, campaignId: string | null | undefined) {
   if (!campaignId) return;
   const [c] = await db
     .select({ id: campaigns.id })
     .from(campaigns)
-    .where(and(eq(campaigns.id, campaignId), eq(campaigns.userId, userId)))
+    .where(and(eq(campaigns.id, campaignId), eq(campaigns.workspaceId, workspaceId)))
     .limit(1);
   if (!c) throw notFound("CAMPAIGN_NOT_FOUND", "Campaign not found.");
 }
 
 export async function qrRoutes(app: FastifyInstance, { db, env, secrets }: { db: Database; env: Env; secrets: SecretBox }) {
   app.addHook("preHandler", requireUser);
+  const read = { preHandler: requirePermission(db, "qr:read") };
+  const write = { preHandler: requirePermission(db, "qr:write") };
 
-  app.post("/qr", async (request, reply) => {
+  app.post("/qr", write, async (request, reply) => {
     const user = currentUser(request);
+    const ws = currentWorkspace(request);
     const input = parse(CreateQRCodeSchema, request.body);
-    await assertCampaignOwned(db, user.id, input.campaignId);
+    await assertCampaignInWorkspace(db, ws.id, input.campaignId);
 
     // Retry on the (astronomically unlikely) code collision.
     for (let attempt = 0; attempt < 5; attempt++) {
@@ -40,7 +45,8 @@ export async function qrRoutes(app: FastifyInstance, { db, env, secrets }: { db:
         const [row] = await db
           .insert(qrCodes)
           .values({
-            userId: user.id,
+            workspaceId: ws.id,
+            createdBy: user.id,
             campaignId: input.campaignId ?? null,
             code: generateCode(),
             name: input.name || "Untitled QR code",
@@ -61,25 +67,25 @@ export async function qrRoutes(app: FastifyInstance, { db, env, secrets }: { db:
     throw new AppError(500, "INTERNAL_ERROR", "Could not allocate a QR code. Please retry.");
   });
 
-  app.get("/qr", async (request) => {
-    const user = currentUser(request);
+  app.get("/qr", read, async (request) => {
+    const ws = currentWorkspace(request);
     const query = parse(ListQuerySchema, request.query);
-    const items = await listQRCodesWithStats(db, user.id, query);
+    const items = await listQRCodesWithStats(db, ws.id, query);
     return items.map((i) => toQRDTO(i.row, i.stats, env));
   });
 
-  app.get<{ Params: { id: string } }>("/qr/:id", async (request) => {
-    const user = currentUser(request);
-    const row = await getOwnedQRCode(db, user.id, request.params.id);
-    const [item] = await listQRCodesWithStats(db, user.id, { ids: [row.id] });
+  app.get<{ Params: { id: string } }>("/qr/:id", read, async (request) => {
+    const ws = currentWorkspace(request);
+    const row = await getWorkspaceQRCode(db, ws.id, request.params.id);
+    const [item] = await listQRCodesWithStats(db, ws.id, { ids: [row.id] });
     return toQRDTO(item.row, item.stats, env, secrets);
   });
 
-  app.patch<{ Params: { id: string } }>("/qr/:id", async (request) => {
-    const user = currentUser(request);
-    const row = await getOwnedQRCode(db, user.id, request.params.id);
+  app.patch<{ Params: { id: string } }>("/qr/:id", write, async (request) => {
+    const ws = currentWorkspace(request);
+    const row = await getWorkspaceQRCode(db, ws.id, request.params.id);
     const input = parse(UpdateQRCodeSchema, request.body);
-    await assertCampaignOwned(db, user.id, input.campaignId);
+    await assertCampaignInWorkspace(db, ws.id, input.campaignId);
 
     const patch: Partial<QRCodeRow> = { updatedAt: new Date() };
     if (input.name !== undefined) patch.name = input.name || "Untitled QR code";
@@ -96,21 +102,21 @@ export async function qrRoutes(app: FastifyInstance, { db, env, secrets }: { db:
     if (input.campaignId !== undefined) patch.campaignId = input.campaignId;
     if (input.status !== undefined) patch.status = input.status;
 
-    await db.update(qrCodes).set(patch).where(eq(qrCodes.id, row.id));
-    const [item] = await listQRCodesWithStats(db, user.id, { ids: [row.id] });
+    await db.update(qrCodes).set(patch).where(and(eq(qrCodes.id, row.id), eq(qrCodes.workspaceId, ws.id)));
+    const [item] = await listQRCodesWithStats(db, ws.id, { ids: [row.id] });
     return toQRDTO(item.row, item.stats, env, secrets);
   });
 
-  app.delete<{ Params: { id: string } }>("/qr/:id", async (request, reply) => {
-    const user = currentUser(request);
-    const row = await getOwnedQRCode(db, user.id, request.params.id);
-    await db.delete(qrCodes).where(eq(qrCodes.id, row.id));
+  app.delete<{ Params: { id: string } }>("/qr/:id", write, async (request, reply) => {
+    const ws = currentWorkspace(request);
+    const row = await getWorkspaceQRCode(db, ws.id, request.params.id);
+    await db.delete(qrCodes).where(and(eq(qrCodes.id, row.id), eq(qrCodes.workspaceId, ws.id)));
     return reply.status(204).send();
   });
 
-  app.get<{ Params: { id: string } }>("/qr/:id/analytics", async (request) => {
-    const user = currentUser(request);
-    const row = await getOwnedQRCode(db, user.id, request.params.id);
+  app.get<{ Params: { id: string } }>("/qr/:id/analytics", { preHandler: requirePermission(db, "analytics:read") }, async (request) => {
+    const ws = currentWorkspace(request);
+    const row = await getWorkspaceQRCode(db, ws.id, request.params.id);
     const query = parse(AnalyticsQuerySchema, request.query);
     return qrCodeAnalytics(db, row, query);
   });

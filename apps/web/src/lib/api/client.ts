@@ -1,5 +1,6 @@
-import type { ApiErrorBody, ErrorCode } from "@qdot/types";
+import { WORKSPACE_HEADER, type ApiErrorBody, type ErrorCode } from "@qdot/types";
 import { API_URL } from "@/lib/config";
+import { getActiveWorkspaceId } from "@/lib/workspace/store";
 
 export class ApiError extends Error {
   constructor(
@@ -30,6 +31,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
       headers: {
         Accept: "application/json",
         ...(init.body ? { "Content-Type": "application/json" } : {}),
+        ...(getActiveWorkspaceId() ? { [WORKSPACE_HEADER]: getActiveWorkspaceId()! } : {}),
         ...init.headers,
       },
     });

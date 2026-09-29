@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n/provider";
+import { useCan } from "@/lib/workspace/provider";
 import { cn } from "@/lib/utils/cn";
 import { MOBILE_TABS, isActive, type NavItem } from "./nav-items";
 
@@ -30,6 +31,7 @@ function Tab({ item, pathname }: { item: NavItem; pathname: string }) {
 export function MobileTabBar() {
   const pathname = usePathname();
   const { t } = useI18n();
+  const canCreate = useCan("qr:write");
   return (
     <nav
       aria-label={t.nav.main}
@@ -40,6 +42,7 @@ export function MobileTabBar() {
           <Tab key={t.href} item={t} pathname={pathname} />
         ))}
         <div className="flex w-20 justify-center">
+          {canCreate && (
           <Link
             href="/qr-codes/new"
             aria-label={t.nav.createQr}
@@ -47,6 +50,7 @@ export function MobileTabBar() {
           >
             <Plus className="size-6" aria-hidden />
           </Link>
+          )}
         </div>
         {MOBILE_TABS.right.map((t) => (
           <Tab key={t.href} item={t} pathname={pathname} />

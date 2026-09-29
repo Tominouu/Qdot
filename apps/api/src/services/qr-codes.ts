@@ -41,6 +41,7 @@ export function toQRDTO(row: QRCodeRow, stats: QRStats | null, env: Env, secrets
   const { content, redacted } = openContent(row, secrets);
   return {
     id: row.id,
+    workspaceId: row.workspaceId,
     code: row.code,
     shortUrl: `${env.QR_REDIRECT_BASE_URL}/r/${row.code}`,
     name: row.name,
@@ -68,9 +69,9 @@ export interface ListFilters {
   ids?: string[];
 }
 
-/** User's QR codes with aggregated scan stats, newest first. */
-export async function listQRCodesWithStats(db: Database, userId: string, filters: ListFilters = {}) {
-  const owned = db.select({ id: qrCodes.id }).from(qrCodes).where(eq(qrCodes.userId, userId));
+/** A workspace's QR codes with aggregated scan stats, newest first. */
+export async function listQRCodesWithStats(db: Database, workspaceId: string, filters: ListFilters = {}) {
+  const owned = db.select({ id: qrCodes.id }).from(qrCodes).where(eq(qrCodes.workspaceId, workspaceId));
   const stats = db
     .select({
       qrCodeId: scanEvents.qrCodeId,
@@ -83,7 +84,7 @@ export async function listQRCodesWithStats(db: Database, userId: string, filters
     .groupBy(scanEvents.qrCodeId)
     .as("stats");
 
-  const conditions: SQL[] = [eq(qrCodes.userId, userId)];
+  const conditions: SQL[] = [eq(qrCodes.workspaceId, workspaceId)];
   if (filters.status) conditions.push(eq(qrCodes.status, filters.status));
   if (filters.campaignId) conditions.push(eq(qrCodes.campaignId, filters.campaignId));
   if (filters.ids) conditions.push(inArray(qrCodes.id, filters.ids.length ? filters.ids : ["00000000-0000-0000-0000-000000000000"]));
@@ -105,13 +106,13 @@ export async function listQRCodesWithStats(db: Database, userId: string, filters
   }));
 }
 
-/** Ownership check: another user's QR code is indistinguishable from a missing one. */
-export async function getOwnedQRCode(db: Database, userId: string, id: string): Promise<QRCodeRow> {
+/** Tenant check: a QR code of another workspace is indistinguishable from a missing one. */
+export async function getWorkspaceQRCode(db: Database, workspaceId: string, id: string): Promise<QRCodeRow> {
   if (!UUID_PATTERN.test(id)) throw notFound("QR_NOT_FOUND", "QR code not found.");
   const [row] = await db
     .select()
     .from(qrCodes)
-    .where(and(eq(qrCodes.id, id), eq(qrCodes.userId, userId)))
+    .where(and(eq(qrCodes.id, id), eq(qrCodes.workspaceId, workspaceId)))
     .limit(1);
   if (!row) throw notFound("QR_NOT_FOUND", "QR code not found.");
   return row;

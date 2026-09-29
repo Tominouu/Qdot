@@ -3,6 +3,7 @@ import type { CampaignAnalytics } from "@/types";
 /** Mock-only campaign record (the API derives membership from qr_codes.campaign_id). */
 export interface MockCampaign {
   id: string;
+  workspaceId: string;
   name: string;
   description: string;
   qrCodeIds: string[];
@@ -13,6 +14,7 @@ export interface MockCampaign {
 export const CAMPAIGNS: MockCampaign[] = [
   {
     id: "summer-2026",
+    workspaceId: "ws_personal",
     name: "Summer 2026",
     description: "Summer marketing campaign across all restaurant locations",
     qrCodeIds: ["qr_summer_menu", "qr_restaurant_wifi", "qr_instagram", "qr_feedback"],

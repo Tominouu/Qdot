@@ -24,7 +24,8 @@ function mockUser(email: string): User {
   return { ...CURRENT_USER, id: `usr_${crypto.randomUUID().slice(0, 8)}`, name: name || "Qdot user", email };
 }
 
-export async function signUp(credentials: Credentials): Promise<AuthSession> {
+/** `invitationToken`: signing up from an invitation link joins that workspace too. */
+export async function signUp(credentials: Credentials & { invitationToken?: string }): Promise<AuthSession> {
   if (!USE_MOCK_API) {
     const { user } = await apiRequest<{ user: User }>("/auth/register", { method: "POST", body: JSON.stringify(credentials) });
     return toSession(user, "password");

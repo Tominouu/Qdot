@@ -13,6 +13,7 @@ export type UpdateCampaignInput = z.input<typeof UpdateCampaignSchema>;
 
 export interface Campaign {
   id: string;
+  workspaceId: string;
   name: string;
   description: string;
   qrCodeCount: number;

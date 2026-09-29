@@ -27,6 +27,7 @@ import type { TimeRange } from "@/types";
 import { DeleteQRModal, ExportQRModal, ShareQRModal } from "./qr-modals";
 import { StyledQR } from "./styled-qr";
 import { Pill } from "@/components/ui/badge";
+import { useCan } from "@/lib/workspace/provider";
 
 type ModalName = "share" | "export" | "delete" | null;
 
@@ -40,6 +41,7 @@ export function QRDetail({ id }: { id: string }) {
   const [updating, setUpdating] = useState(false);
   const { t, locale } = useI18n();
   const d = t.detail;
+  const canWrite = useCan("qr:write");
 
   if (qrRes.error) return <NotFoundState />;
   const qr = qrRes.data;
@@ -95,9 +97,11 @@ export function QRDetail({ id }: { id: string }) {
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
-            <ButtonLink href={`/qr-codes/${qr.id}/edit`} variant="neutral" className="h-[37px] rounded-lg px-4 text-[13px]">
-              {t.common.edit}
-            </ButtonLink>
+            {canWrite && (
+              <ButtonLink href={`/qr-codes/${qr.id}/edit`} variant="neutral" className="h-[37px] rounded-lg px-4 text-[13px]">
+                {t.common.edit}
+              </ButtonLink>
+            )}
             <Button variant="neutral" className="h-[37px] rounded-lg px-4 text-[13px]" onClick={() => setModal("export")}>
               {d.download}
             </Button>
@@ -106,7 +110,7 @@ export function QRDetail({ id }: { id: string }) {
                 {t.common.share}
               </Button>
             )}
-            {dynamic && qr.status !== "archived" && (
+            {canWrite && dynamic && qr.status !== "archived" && (
               <Button
                 variant={paused ? "neutral" : "warning"}
                 className="h-[37px] rounded-lg px-4 text-[13px]"
@@ -135,10 +139,10 @@ export function QRDetail({ id }: { id: string }) {
 
         {/* Mobile action grid */}
         <div className="grid grid-cols-4 gap-2 md:hidden">
-          <MobileAction icon={<Pencil />} label={t.common.edit} href={`/qr-codes/${qr.id}/edit`} />
+          {canWrite && <MobileAction icon={<Pencil />} label={t.common.edit} href={`/qr-codes/${qr.id}/edit`} />}
           <MobileAction icon={<Download />} label={d.download} onClick={() => setModal("export")} />
           {dynamic && <MobileAction icon={<Share />} label={t.common.share} onClick={() => setModal("share")} />}
-          {dynamic && qr.status !== "archived" && (
+          {canWrite && dynamic && qr.status !== "archived" && (
             <MobileAction icon={paused ? <Play /> : <Pause />} label={paused ? d.resume : d.pause} onClick={toggleStatus} />
           )}
         </div>
@@ -233,11 +237,13 @@ export function QRDetail({ id }: { id: string }) {
         </>
       )}
 
+      {canWrite && (
       <div className="flex justify-end">
         <Button variant="ghost-danger" size="sm" leadingIcon={<Trash2 className="size-4" />} onClick={() => setModal("delete")}>
           {d.deleteQr}
         </Button>
       </div>
+      )}
 
       <ShareQRModal qr={qr} open={modal === "share"} onClose={() => setModal(null)} />
       <ExportQRModal qr={qr} open={modal === "export"} onClose={() => setModal(null)} />

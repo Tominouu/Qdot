@@ -13,6 +13,12 @@ before(async () => {
 });
 after(() => api.stop());
 
+/** Drizzle wraps the driver error; the constraint that fired is on `cause`. */
+const violates = (constraint: string) => (err: unknown) => {
+  const cause = (err as { cause?: { constraint_name?: string; message?: string } }).cause;
+  return (cause?.constraint_name ?? cause?.message ?? "").includes(constraint);
+};
+
 const errorCode = (res: { json: () => unknown }) => (res.json() as { error: { code: string } }).error.code;
 const PASSWORD = "S3cr3t;Pass:\"word\\";
 
@@ -139,8 +145,9 @@ describe("QR designer: content, modes, design", () => {
   test("codes saved before the designer keep working", async () => {
     const [user] = await api.db.execute<{ id: string }>(sql`select id from users where email = 'designer@qdot.test'`);
     // Exactly what 0000_init stored: no mode/content columns set, v1 style JSON.
-    await api.db.execute(sql`insert into qr_codes (user_id, code, name, destination_url, configuration)
-      values (${user.id}, 'wxyzab23', 'Legacy', 'https://legacy.example/page', ${JSON.stringify(STYLE)}::jsonb)`);
+    const [ws] = await api.db.execute<{ id: string }>(sql`select workspace_id as id from workspace_members where user_id = ${user.id}::uuid and role = 'owner' limit 1`);
+    await api.db.execute(sql`insert into qr_codes (user_id, workspace_id, code, name, destination_url, configuration)
+      values (${user.id}, ${ws.id}, 'wxyzab23', 'Legacy', 'https://legacy.example/page', ${JSON.stringify(STYLE)}::jsonb)`);
     const legacy = ((await a.get("/qr")).json() as QRCode[]).find((q) => q.code === "wxyzab23")!;
     assert.equal(legacy.mode, "dynamic");
     assert.equal(legacy.type, "url");
@@ -161,12 +168,16 @@ describe("QR designer: content, modes, design", () => {
   });
 
   test("the database refuses a dynamic code without an http(s) destination", async () => {
-    const [user] = await api.db.execute<{ id: string }>(sql`select id from users where email = 'designer@qdot.test'`);
-    await assert.rejects(
-      api.db.execute(sql`insert into qr_codes (user_id, code, mode, configuration) values (${user.id}, 'nodest23', 'dynamic', '{}'::jsonb)`),
+    const [m] = await api.db.execute<{ user_id: string; workspace_id: string }>(
+      sql`select user_id, workspace_id from workspace_members m join users u on u.id = m.user_id where u.email = 'designer@qdot.test' limit 1`,
     );
     await assert.rejects(
-      api.db.execute(sql`insert into qr_codes (user_id, code, mode, configuration) values (${user.id}, 'badmode2', 'weird', '{}'::jsonb)`),
+      api.db.execute(sql`insert into qr_codes (user_id, workspace_id, code, mode, configuration) values (${m.user_id}, ${m.workspace_id}, 'nodest23', 'dynamic', '{}'::jsonb)`),
+      violates("qr_codes_destination_check"),
+    );
+    await assert.rejects(
+      api.db.execute(sql`insert into qr_codes (user_id, workspace_id, code, mode, destination_url, configuration) values (${m.user_id}, ${m.workspace_id}, 'badmode2', 'weird', 'https://ok.example', '{}'::jsonb)`),
+      violates("qr_codes_mode_check"),
     );
   });
 });

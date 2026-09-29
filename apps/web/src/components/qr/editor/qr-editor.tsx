@@ -13,6 +13,9 @@ import { clearSession, getSession } from "@/lib/auth/session";
 import { errorMessage } from "@/lib/i18n/errors";
 import { useI18n } from "@/lib/i18n/provider";
 import { savePendingQR } from "@/lib/onboarding/pending-qr";
+import { useCan } from "@/lib/workspace/provider";
+import { ButtonLink } from "@/components/ui/button";
+import { Eye } from "lucide-react";
 import { ContentPanel } from "./content-panel";
 import { DesignPanel } from "./design-panel";
 import { QRPreviewCard } from "./qr-preview-card";
@@ -24,7 +27,27 @@ interface QREditorProps {
   existingId?: string;
 }
 
-export function QREditor({ initial, existingId }: QREditorProps) {
+export function QREditor(props: QREditorProps) {
+  const canWrite = useCan("qr:write");
+  const { t } = useI18n();
+  if (!canWrite) {
+    // Viewers can reach the URL, but saving would be refused by the API anyway.
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-6 text-center">
+        <span className="flex size-12 items-center justify-center rounded-full bg-surface text-muted" aria-hidden>
+          <Eye className="size-5" />
+        </span>
+        <p className="max-w-sm text-sm text-muted">{t.workspace.readOnly}</p>
+        <ButtonLink href={props.existingId ? `/qr-codes/${props.existingId}` : "/qr-codes"} variant="neutral">
+          {t.common.backToQrCodes}
+        </ButtonLink>
+      </div>
+    );
+  }
+  return <Editor {...props} />;
+}
+
+function Editor({ initial, existingId }: QREditorProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useI18n();

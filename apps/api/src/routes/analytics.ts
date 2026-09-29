@@ -3,14 +3,14 @@ import { AnalyticsQuerySchema } from "@qdot/types";
 import { sql } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 import { parse } from "../lib/errors";
-import { currentUser, requireUser } from "../plugins/auth";
+import { requireUser } from "../plugins/auth";
+import { currentWorkspace, requirePermission } from "../plugins/workspace";
 import { workspaceAnalytics } from "../services/analytics";
 
 export async function analyticsRoutes(app: FastifyInstance, { db }: { db: Database }) {
-  /** Workspace-wide analytics across all of the user's QR codes. */
-  app.get("/analytics", { preHandler: requireUser }, async (request) => {
-    const user = currentUser(request);
-    return workspaceAnalytics(db, user.id, parse(AnalyticsQuerySchema, request.query));
+  /** Analytics across all QR codes of the selected workspace. */
+  app.get("/analytics", { preHandler: [requireUser, requirePermission(db, "analytics:read")] }, async (request) => {
+    return workspaceAnalytics(db, currentWorkspace(request).id, parse(AnalyticsQuerySchema, request.query));
   });
 }
 

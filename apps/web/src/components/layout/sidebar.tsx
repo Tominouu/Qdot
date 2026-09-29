@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { InstallAppButton } from "@/components/pwa/install-button";
 import { Avatar } from "@/components/ui/avatar";
+import { WorkspaceSwitcher } from "@/components/workspace/workspace-switcher";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { useSignOut } from "@/lib/auth/use-sign-out";
 import { useI18n } from "@/lib/i18n/provider";
@@ -32,7 +33,8 @@ export function Sidebar({ user }: { user: User }) {
   return (
     <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-line bg-sidebar p-6 lg:flex">
       <Logo href="/qr-codes" />
-      <nav aria-label={t.nav.main} className="mt-10">
+      <WorkspaceSwitcher className="mt-6" />
+      <nav aria-label={t.nav.main} className="mt-6">
         <ul className="flex flex-col gap-2">
           {SIDEBAR_NAV.map((item) => {
             const active = isActive(pathname, item.match);

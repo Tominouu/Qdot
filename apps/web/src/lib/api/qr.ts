@@ -3,7 +3,7 @@ import { USE_MOCK_API } from "@/lib/config";
 import { generateSlug } from "@/lib/qr/slug";
 import { CreateQRCodeSchema, UpdateQRCodeSchema, type CreateQRCodeInput, type QRCode, type QRStatus, type UpdateQRCodeInput } from "@/types";
 import { ApiError, apiRequest, toQuery } from "./client";
-import { delay, readStore, writeStore } from "./mock-store";
+import { delay, mockWorkspaceId, readStore, writeStore } from "./mock-store";
 
 export interface ListQRCodesParams {
   status?: QRStatus;
@@ -14,8 +14,10 @@ export async function listQRCodes(params: ListQRCodesParams = {}): Promise<QRCod
   if (!USE_MOCK_API) return apiRequest<QRCode[]>(`/qr${toQuery({ ...params })}`);
 
   const search = params.search?.trim().toLowerCase();
+  const ws = mockWorkspaceId();
   const items = readStore()
-    .qrCodes.filter((q) => !params.status || q.status === params.status)
+    .qrCodes.filter((q) => q.workspaceId === ws)
+    .filter((q) => !params.status || q.status === params.status)
     .filter((q) => !search || q.name.toLowerCase().includes(search) || (q.destinationUrl ?? "").toLowerCase().includes(search));
   return delay(items);
 }
@@ -23,7 +25,7 @@ export async function listQRCodes(params: ListQRCodesParams = {}): Promise<QRCod
 export async function getQRCode(id: string): Promise<QRCode> {
   if (!USE_MOCK_API) return apiRequest<QRCode>(`/qr/${encodeURIComponent(id)}`);
 
-  const qr = readStore().qrCodes.find((q) => q.id === id);
+  const qr = readStore().qrCodes.find((q) => q.id === id && q.workspaceId === mockWorkspaceId());
   if (!qr) throw new ApiError("QR code not found", 404, "QR_NOT_FOUND");
   return delay(qr);
 }
@@ -40,6 +42,7 @@ export async function createQRCode(input: CreateQRCodeInput): Promise<QRCode> {
   const code = generateSlug(8);
   const qr: QRCode = {
     id: `qr_${crypto.randomUUID().slice(0, 8)}`,
+    workspaceId: mockWorkspaceId(),
     code,
     shortUrl: mockShortUrl(code),
     name: data.name || "Untitled QR code",
@@ -71,12 +74,12 @@ export async function updateQRCode(id: string, patch: UpdateQRCodeInput): Promis
   const parsed = UpdateQRCodeSchema.safeParse(patch);
   if (!parsed.success) throw new ApiError(parsed.error.issues[0]?.message ?? "Invalid request.", 400, "VALIDATION_ERROR");
   const { content, design, ...fields } = parsed.data;
-  const current = readStore().qrCodes.find((q) => q.id === id);
+  const current = readStore().qrCodes.find((q) => q.id === id && q.workspaceId === mockWorkspaceId());
   if (current?.mode === "dynamic" && content && content.type !== "url")
     throw new ApiError("Dynamic QR codes can only point to a URL.", 400, "VALIDATION_ERROR");
   let updated: QRCode | undefined;
   writeStore((s) => {
-    const qr = s.qrCodes.find((q) => q.id === id);
+    const qr = s.qrCodes.find((q) => q.id === id && q.workspaceId === mockWorkspaceId());
     if (!qr) return;
     Object.assign(qr, Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined)), { updatedAt: new Date().toISOString() });
     if (fields.name !== undefined) qr.name = fields.name || "Untitled QR code";
@@ -96,7 +99,7 @@ export async function deleteQRCode(id: string): Promise<void> {
   if (!USE_MOCK_API) return apiRequest<void>(`/qr/${encodeURIComponent(id)}`, { method: "DELETE" });
 
   writeStore((s) => {
-    s.qrCodes = s.qrCodes.filter((q) => q.id !== id);
+    s.qrCodes = s.qrCodes.filter((q) => !(q.id === id && q.workspaceId === mockWorkspaceId()));
     for (const c of s.campaigns) c.qrCodeIds = c.qrCodeIds.filter((q) => q !== id);
   });
   return delay(undefined);

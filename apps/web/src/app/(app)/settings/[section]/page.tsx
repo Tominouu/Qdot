@@ -2,6 +2,7 @@ import { Settings } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PrivacySettings } from "@/components/settings/privacy-settings";
+import { WorkspaceSettings } from "@/components/settings/workspace-settings";
 import { SETTINGS_SECTIONS } from "@/components/settings/sections";
 import { SettingsNav } from "@/components/settings/settings-nav";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -26,6 +27,8 @@ export default async function SettingsSectionPage(props: PageProps<"/settings/[s
       <SettingsNav />
       {current === "privacy" ? (
         <PrivacySettings />
+      ) : current === "workspace" || current === "team" ? (
+        <WorkspaceSettings membersOnly={current === "team"} />
       ) : (
         // Only "Privacy & Data" is designed; other sections share a neutral placeholder.
         <EmptyState

@@ -2,6 +2,7 @@ import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import type { Database } from "@qdot/database";
+import { WORKSPACE_HEADER } from "@qdot/types";
 import Fastify, { type FastifyServerOptions } from "fastify";
 import type { Env } from "./env";
 import { AppError, registerErrorHandling } from "./lib/errors";
@@ -11,6 +12,7 @@ import { authRoutes } from "./routes/auth";
 import { campaignRoutes } from "./routes/campaigns";
 import { qrRoutes } from "./routes/qr-codes";
 import { redirectRoutes } from "./routes/redirect";
+import { workspaceRoutes } from "./routes/workspaces";
 import type { GeoResolver } from "./services/geoip";
 import { createSecretBox } from "./services/secrets";
 
@@ -38,6 +40,7 @@ export async function buildApp({ env, db, geo, logger = true }: AppDeps) {
     origin: env.CORS_ORIGIN,
     credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE"],
+    allowedHeaders: ["Content-Type", "Accept", WORKSPACE_HEADER],
   });
   await app.register(rateLimit, { global: false });
 
@@ -62,6 +65,7 @@ export async function buildApp({ env, db, geo, logger = true }: AppDeps) {
   await app.register(qrRoutes, { db, env, secrets: createSecretBox(env.DATA_ENCRYPTION_KEY ?? env.SESSION_SECRET) });
   await app.register(campaignRoutes, { db, env });
   await app.register(analyticsRoutes, { db });
+  await app.register(workspaceRoutes, { db });
 
   return app;
 }

@@ -1,7 +1,10 @@
+import { cpSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PGlite } from "@electric-sql/pglite";
 import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
-import { createDatabase } from "@qdot/database";
+import { createDatabase, type Database } from "@qdot/database";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import type { InjectOptions } from "fastify";
 import { buildApp } from "../src/app";
@@ -33,8 +36,27 @@ export const UA = {
  * Real Postgres (PGlite, in-memory) behind a Postgres wire-protocol socket, so
  * the API runs its normal postgres-js driver and migrations. No install needed.
  */
-/** `logs`: collect every log line (info and above) to assert nothing sensitive is logged. */
-export async function startTestApi(opts: { logs?: string[] } = {}) {
+const MIGRATIONS = fileURLToPath(new URL("../../../packages/database/migrations", import.meta.url));
+
+/** A copy of the migrations folder that stops after `lastTag` (to seed data in an older schema). */
+function migrationsUpTo(lastTag: string): string {
+  const dir = mkdtempSync(join(tmpdir(), "qdot-migrations-"));
+  cpSync(MIGRATIONS, dir, { recursive: true });
+  const journalPath = join(dir, "meta/_journal.json");
+  const journal = JSON.parse(readFileSync(journalPath, "utf8")) as { entries: { tag: string }[] };
+  const last = journal.entries.findIndex((e) => e.tag === lastTag);
+  if (last === -1) throw new Error(`Unknown migration ${lastTag}`);
+  journal.entries = journal.entries.slice(0, last + 1);
+  writeFileSync(journalPath, JSON.stringify(journal));
+  return dir;
+}
+
+/**
+ * `logs`: collect every log line (info and above) to assert nothing sensitive is logged.
+ * `seedBefore`: migrate only up to `upTo`, run `seed` against that older schema, then
+ * apply the remaining migrations, exactly like a production database being upgraded.
+ */
+export async function startTestApi(opts: { logs?: string[]; seedBefore?: { upTo: string; seed: (db: Database) => Promise<void> } } = {}) {
   const pg = await PGlite.create();
   const port = 55000 + Math.floor(Math.random() * 5000);
   const server = new PGLiteSocketServer({ db: pg, port, host: "127.0.0.1", maxConnections: 10 });
@@ -51,7 +73,11 @@ export async function startTestApi(opts: { logs?: string[] } = {}) {
   // PGlite is single-connection: its socket multiplexer interleaves concurrent
   // connections' protocol messages, so tests use one pooled connection.
   const { db, close } = createDatabase(url, { maxConnections: 1 });
-  await migrate(db, { migrationsFolder: fileURLToPath(new URL("../../../packages/database/migrations", import.meta.url)) });
+  if (opts.seedBefore) {
+    await migrate(db, { migrationsFolder: migrationsUpTo(opts.seedBefore.upTo) });
+    await opts.seedBefore.seed(db);
+  }
+  await migrate(db, { migrationsFolder: MIGRATIONS });
   const logger = opts.logs
     ? { level: "info", stream: { write: (line: string) => void opts.logs!.push(line) } }
     : process.env.TEST_LOG
@@ -73,13 +99,20 @@ export async function startTestApi(opts: { logs?: string[] } = {}) {
 
 type App = Awaited<ReturnType<typeof startTestApi>>["app"];
 
-/** Small cookie-jar client around app.inject, like a browser session. */
+let clientCount = 0;
+
+/** Small cookie-jar client around app.inject, like a browser session. Each client has its own IP, like a real visitor. */
 export function client(app: App) {
+  const n = ++clientCount;
+  const remoteAddress = `10.${(n >> 16) & 255}.${(n >> 8) & 255}.${n & 255}`;
   let cookie: string | undefined;
+  /** Selected workspace, sent like the web app does (X-Qdot-Workspace). */
+  let workspace: string | undefined;
   const call = async (opts: InjectOptions) => {
     const res = await app.inject({
+      remoteAddress,
       ...opts,
-      headers: { ...(cookie ? { cookie } : {}), ...(opts.headers ?? {}) },
+      headers: { ...(cookie ? { cookie } : {}), ...(workspace ? { "x-qdot-workspace": workspace } : {}), ...(opts.headers ?? {}) },
     });
     const setCookie = res.headers["set-cookie"];
     const first = Array.isArray(setCookie) ? setCookie[0] : setCookie;
@@ -91,9 +124,12 @@ export function client(app: App) {
     get: (url: string, headers?: Record<string, string>) => call({ method: "GET", url, headers }),
     post: (url: string, payload?: unknown, headers?: Record<string, string>) => call({ method: "POST", url, payload: payload as object, headers }),
     patch: (url: string, payload: unknown) => call({ method: "PATCH", url, payload: payload as object }),
-    del: (url: string) => call({ method: "DELETE", url }),
+    del: (url: string, payload?: unknown) => call({ method: "DELETE", url, payload: payload as object }),
     get cookie() {
       return cookie;
+    },
+    use(workspaceId: string | undefined) {
+      workspace = workspaceId;
     },
   };
 }

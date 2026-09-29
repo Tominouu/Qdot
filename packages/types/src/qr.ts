@@ -81,6 +81,7 @@ export type UpdateQRCodeData = z.output<typeof UpdateQRCodeSchema>;
 
 export interface QRCode {
   id: string;
+  workspaceId: string;
   /** Public, random identifier used in the redirect URL. Never the database id. */
   code: string;
   /** Redirect URL, e.g. https://qr.qdot.com/r/abc123xy. Encoded in the image only when `mode` is "dynamic". */

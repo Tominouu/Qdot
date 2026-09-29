@@ -13,6 +13,8 @@ import { listCampaigns } from "@/lib/api/campaigns";
 import { useResource } from "@/lib/hooks/use-resource";
 import { useI18n } from "@/lib/i18n/provider";
 import { formatDate } from "@/lib/utils/format";
+import { ReadOnlyNotice } from "@/components/workspace/read-only-notice";
+import { useCan } from "@/lib/workspace/provider";
 import { EditCampaignModal } from "./edit-campaign-modal";
 
 /** Campaign index, composed from existing design-system pieces (the design only shows a campaign's detail). */
@@ -22,6 +24,7 @@ export function CampaignList() {
   const [creating, setCreating] = useState(false);
   const { t, locale } = useI18n();
   const c = t.campaigns;
+  const canWrite = useCan("campaign:write");
 
   const modal = (
     <EditCampaignModal open={creating} onClose={() => setCreating(false)} onSaved={(saved) => router.push(`/campaigns/${saved.id}`)} />
@@ -40,9 +43,11 @@ export function CampaignList() {
           title={c.emptyTitle}
           description={c.emptyDescription}
           actions={
-            <Button variant="inverse" className="h-[42px]" onClick={() => setCreating(true)}>
-              {c.create}
-            </Button>
+            canWrite && (
+              <Button variant="inverse" className="h-[42px]" onClick={() => setCreating(true)}>
+                {c.create}
+              </Button>
+            )
           }
         />
         {modal}
@@ -56,11 +61,14 @@ export function CampaignList() {
         title={c.title}
         description={c.description}
         actions={
-          <Button onClick={() => setCreating(true)} leadingIcon={<Plus className="size-4" />}>
-            {c.newCampaign}
-          </Button>
+          canWrite && (
+            <Button onClick={() => setCreating(true)} leadingIcon={<Plus className="size-4" />}>
+              {c.newCampaign}
+            </Button>
+          )
         }
       />
+      <ReadOnlyNotice permission="campaign:write" />
       <ul className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
         {loading || !data
           ? Array.from({ length: 3 }, (_, i) => (
